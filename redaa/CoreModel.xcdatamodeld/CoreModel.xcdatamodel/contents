@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24B2082" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
-    <entity name="Dictionary" representedClassName="Dictionary" syncable="YES" codeGenerationType="class">
+    <entity name="Dictionary" representedClassName=".Dictionary" syncable="YES">
         <attribute name="attribution" optional="YES" attributeType="String"/>
         <attribute name="d_description" optional="YES" attributeType="String"/>
         <attribute name="downloadUrl" optional="YES" attributeType="String"/>
@@ -13,6 +13,18 @@
         <attribute name="targetLanguage" optional="YES" attributeType="String"/>
         <attribute name="title" attributeType="String"/>
         <attribute name="url" optional="YES" attributeType="String"/>
+        <relationship name="entries" toMany="YES" deletionRule="Cascade" destinationEntity="DictionaryEntry" inverseName="dictionary" inverseEntity="DictionaryEntry"/>
+    </entity>
+    <entity name="DictionaryEntry" representedClassName=".DictionaryEntry" syncable="YES">
+        <attribute name="definition_tags" attributeType="Transformable"/>
+        <attribute name="definitions" attributeType="Transformable"/>
+        <attribute name="deinflection_ids" attributeType="Transformable"/>
+        <attribute name="kanji" attributeType="String"/>
+        <attribute name="reading" attributeType="String"/>
+        <attribute name="score" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="sequence_id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="term_tags" attributeType="Transformable"/>
+        <relationship name="dictionary" maxCount="1" deletionRule="Nullify" destinationEntity="Dictionary" inverseName="entries" inverseEntity="Dictionary"/>
     </entity>
     <entity name="MangaModel" representedClassName=".MangaModel" syncable="YES">
         <attribute name="cover" optional="YES" attributeType="Binary" defaultValueString="" allowsExternalBinaryDataStorage="YES" allowsCloudEncryption="YES"/>
@@ -22,7 +34,7 @@
     </entity>
     <entity name="MangaPageModel" representedClassName=".MangaPageModel" syncable="YES">
         <attribute name="height" attributeType="Integer 32" defaultValueString="0.0" usesScalarValueType="YES"/>
-        <attribute name="image" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
+        <attribute name="image" attributeType="String" allowsExternalBinaryDataStorage="YES"/>
         <attribute name="number" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="width" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <relationship name="boxes" toMany="YES" deletionRule="Cascade" destinationEntity="PageBoxModel" inverseName="page" inverseEntity="PageBoxModel"/>

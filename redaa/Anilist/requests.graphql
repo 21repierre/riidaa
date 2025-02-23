@@ -1,7 +1,7 @@
 
 query MangaSearchQuery($page: Int, $search: String) {
   Page(page: $page) {
-    media(search: $search) {
+    media(search: $search, type: MANGA) {
       id
       title {
         romaji

@@ -11,5 +11,5 @@ import CoreData
 
 @objc(MangaModel)
 public class MangaModel: NSManagedObject {
-
+    
 }

@@ -26,38 +26,46 @@ public struct MangaReader: View {
         VStack {
             TabView(selection: $currentPage) {
                 ForEach(pages.indices, id: \.self) { index in
-                    if let imageData = pages[index].getImage() {
-                        VStack {
-                            GeometryReader { geometry in
-                                let scale = min(geometry.size.width / Double(pages[index].width),
-                                                geometry.size.height / Double(pages[index].height))
-                                let offset = (geometry.size.height - Double(pages[index].height) * scale) / 2
-                                ZStack {
-                                    Image(uiImage: imageData)
+                    
+                    VStack {
+                        GeometryReader { geometry in
+                            let scale = min(geometry.size.width / Double(pages[index].width),
+                                            geometry.size.height / Double(pages[index].height))
+                            let offset = (geometry.size.height - Double(pages[index].height) * scale) / 2
+                            ZStack {
+                                if abs(index - self.currentPage) <= 2 {
+                                    if let imageData = pages[index].getImage() {
+                                        Image(uiImage: imageData)
+                                            .resizable()
+                                            .scaledToFit()
+                                        //                                        .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+                                            .onAppear(perform: {
+                                                print(offset, geometry.size.height)
+                                            })
+                                    } else {
+                                        Text("Page \(index + 1)")
+                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                            .background(Color.black)
+                                            .foregroundColor(.white)
+                                    }
+                                } else {
+                                    Image(systemName: "xmark")
                                         .resizable()
                                         .scaledToFit()
-//                                        .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
-                                        .onAppear(perform: {
-                                            print(offset, geometry.size.height)
-                                        })
-                                    
-                                    MangaReaderBoxes(boxes: pages[index].getBoxes(), scale: scale, offset: offset, currentLine: $currentLine)
                                 }
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                MangaReaderBoxes(boxes: pages[index].getBoxes(), scale: scale, offset: offset, currentLine: $currentLine)
                             }
-                            if currentLine != "" {
-                                Text(currentLine)
-                                    .onAppear(perform: {
-                                        print("appear \(currentLine)")
-                                    })
-                            }
-                        }
-                    } else {
-                        Text("Page \(index + 1)")
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(Color.black)
-                            .foregroundColor(.white)
+                        }
+                        if currentLine != "" {
+                            Text(currentLine)
+                                .onAppear(perform: {
+                                    print("appear \(currentLine)")
+                                })
+                        }
                     }
+                    
+                    
                 }
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never)) // Horizontal paging
@@ -74,6 +82,7 @@ public struct MangaReader: View {
                 alignment: .bottomTrailing
             )
             .onChange(of: currentPage) { newPage in
+                self.currentLine = ""
                 volume.lastReadPage = Int64(newPage)
                 DispatchQueue.main.async {
                     CoreDataManager.shared.saveContext()
@@ -84,5 +93,5 @@ public struct MangaReader: View {
 }
 
 //#Preview {
-    //    MangaReader()
+//    MangaReader()
 //}

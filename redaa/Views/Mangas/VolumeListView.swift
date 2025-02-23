@@ -61,7 +61,9 @@ struct VolumeListView: View {
         ) {
             VolumeProcessing(message: $processingMessage, status: $processingStatus, progressValue: $processingProgress)
                 .interactiveDismissDisabled(dismissDisabled)
-        }
+        }.onAppear(perform: {
+            print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("mangas"))
+        })
     }
 }
 
@@ -121,8 +123,11 @@ extension VolumeListView {
                 guard let pages = mokuroJson["pages"] as? [[String: Any]] else {
                     throw NSError(domain: "VolumeProcessing", code: 6, userInfo: [NSLocalizedDescriptionKey: "Missing pages in mokuro"])
                 }
-                
                 let nPages = CGFloat(pages.count)
+                
+                let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("mangas")
+                let volumeDirectory = documents.appendingPathComponent(String(manga.id)).appendingPathComponent(String(newVolume.number))
+                try fileManager.createDirectory(at: volumeDirectory, withIntermediateDirectories: true)
                 
                 for (i, page) in pages.enumerated() {
                     guard let img_path = page["img_path"] as? String,
@@ -131,25 +136,16 @@ extension VolumeListView {
                         throw NSError(domain: "VolumeProcessing", code: 6, userInfo: [NSLocalizedDescriptionKey: "Missing image infos"])
                     }
                     let img = imagesFolder.appendingPathComponent(img_path)
-                    let img_data = try Data(contentsOf: img)
-                    var uiImage = UIImage(data: img_data)!
-                    let imgSize = uiImage.size
-                    let screenSize = UIScreen.main.nativeBounds
-//                    print(imgSize, screenSize)
-                    var factor = 1.0
-                    if imgSize.width > screenSize.width {
-                        factor = Double(screenSize.width / imgSize.width)
-                    } else if imgSize.height > screenSize.height {
-                        factor = Double(screenSize.height / imgSize.height)
-                    }
-                    uiImage = uiImage.copy(newSize: CGSize(width: imgSize.width*factor, height: imgSize.height*factor))!
-
+                    let destImg = volumeDirectory.appendingPathComponent(img_path)
+                    print(destImg)
+                    try? fileManager.removeItem(at: destImg)
+                    try fileManager.moveItem(at: img, to: destImg)
                     
                     let newPage = MangaPageModel(context: moc)
                     newVolume.insertIntoPages(newPage, at: i)
                     newPage.number = Int64(i + 1)
-//                    newPage.image = img_data
-                    newPage.image = uiImage.jpegData(compressionQuality: 1)!
+                    newPage.image = img_path
+                    
                     newPage.width = img_width
                     newPage.height = img_height
                     
@@ -171,8 +167,6 @@ extension VolumeListView {
                         pageBlock.height = (box[3] - box[1])
                         pageBlock.text = lines.joined()
                         pageBlock.rotation = rotation ?? 0
-//                        pageBlock.page = newPage
-//                        print(factor, box, pageBlock.x, pageBlock.y, pageBlock.width, pageBlock.height)
                         
                         newPage.addToBoxes(pageBlock)
                     }
@@ -191,8 +185,10 @@ extension VolumeListView {
             }
             
             DispatchQueue.main.async {
-                CoreDataManager.shared.saveContext()
-                self.processingStatus = ProcessingStatus.FINISHED
+                if self.processingStatus != ProcessingStatus.ERROR {
+                    CoreDataManager.shared.saveContext()
+                    self.processingStatus = ProcessingStatus.FINISHED
+                }
             }
         }
     }
@@ -218,9 +214,6 @@ struct VolumeProcessing: View {
             case .STARTED:
                 CircularProgressView(progress: progressValue)
                     .frame(width: 150, height: 150)
-//                ProgressView(value: progressValue)
-//                    .progressViewStyle(.circular)
-//                    .scaleEffect(4)
                 
             case .FINISHED:
                 Image(systemName: "checkmark")
@@ -244,7 +237,12 @@ struct VolumeProcessing: View {
     
 }
 
-//#Preview {
-//    //    VolumeListView()
-//    VolumeProcessing(message: .init(get: {"Loading"}, set: {_ in }), status: .init(get: {ProcessingStatus.ERROR}, set: {_ in }))
-//}
+#Preview {
+    VolumeListView(
+        manga: CoreDataManager.sampleManga
+    )
+    .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
+    .onAppear(perform: {
+        print(CoreDataManager.sampleManga)
+    })
+}

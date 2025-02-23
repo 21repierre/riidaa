@@ -67,3 +67,24 @@ extension MangaVolumeModel {
 extension MangaVolumeModel : Identifiable {
 
 }
+
+
+extension CoreDataManager {
+    
+    static var sampleVolume: MangaVolumeModel {
+        let volume = MangaVolumeModel(context: CoreDataManager.shared.context)
+        volume.number = 1
+        volume.lastReadPage = 10
+        
+        
+        for i in 0...50 {
+            let p1 = MangaPageModel(context: CoreDataManager.shared.context)
+            p1.number = Int64(i)
+            p1.image = ""
+            volume.insertIntoPages(p1, at: i)
+        }
+        
+        return volume
+    }
+    
+}

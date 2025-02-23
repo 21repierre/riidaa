@@ -18,24 +18,23 @@ extension MangaPageModel {
     }
 
     @NSManaged public var number: Int64
-    @NSManaged public var image: Data
+    @NSManaged public var image: String
     @NSManaged public var volume: MangaVolumeModel
     @NSManaged public var boxes: NSSet
     @NSManaged public var width: Int32
     @NSManaged public var height: Int32
+    
+    
 
 }
 
 extension MangaPageModel {
     
-    public func setImage(image: UIImage) {
-        let pngImage = image.pngData()
-        self.image = pngImage!
-    }
-    
-    public func getImage() -> UIImage? {
-        return UIImage(data: self.image)
-    }
+//    public func setImage(image: UIImage) {
+//        let pngImage = image.pngData()
+//        self.image = pngImage!
+//    }
+
     
     public func getBoxes() -> [PageBoxModel] {
         return boxes.allObjects as! [PageBoxModel]

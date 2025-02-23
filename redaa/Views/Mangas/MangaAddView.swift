@@ -7,36 +7,77 @@
 
 import SwiftUI
 import Anilist
-import CoreData
 
 struct MangaAddView: View {
     
-    @Environment(\.managedObjectContext) var moc
     @State var mangaTitle = ""
     @State var searchMangasList: [MangaResultModel] = []
     @Environment(\.dismiss) var dismiss
-//    @EnvironmentObject var mangas: MangaList
     @State var isSearching = false
+    @FocusState private var isTextFieldFocused: Bool
+    @Environment(\.managedObjectContext) var moc
+    
     
     var body: some View {
         VStack {
             TextField("Manga title...", text: $mangaTitle, onCommit: searchMangas)
-                .padding(7)
+                .padding(10)
                 .background(Color(.systemGray6))
-                .cornerRadius(5)
+                .cornerRadius(10)
+                .overlay(
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            mangaTitle = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.gray)
+                                .scaleEffect(mangaTitle.isEmpty ? 0.5 : 1.2)
+                                .opacity(mangaTitle.isEmpty ? 0 : 1)
+                        }
+                        .padding(.trailing, 8)
+                        .transition(.scale.combined(with: .opacity))
+                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: mangaTitle)
+                    }
+                )
+                .padding(.horizontal)
+                .focused($isTextFieldFocused)
+            
             ScrollView {
                 if isSearching {
-                    ProgressView()
-                        .controlSize(.large)
+                    VStack {
+                        ProgressView()
+                            .controlSize(.regular)
+                            .scaleEffect(2)
+                        Text("Searching...")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                            .padding(.top, 20)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 150)
                 } else if searchMangasList.isEmpty {
-                    Text("Search your manga")
-                        .foregroundColor(Color(.systemGray))
+                    VStack {
+                        Image(systemName: "book.closed")
+                        //                            .font(.largeTitle)
+                            .scaleEffect(2)
+                            .foregroundColor(.gray)
+                        Text("Start searching for a manga")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                            .padding(.top, 20)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 150)
                 } else {
-                    MangaSearhResultView(searchMangasList: $searchMangasList)
+                    MangaAddResultView(searchMangasList: $searchMangasList)
                 }
             }
             
-        }.padding(10)
+        }
+        //        .padding(5)
+        .padding(.top, 20)
+        .onAppear {
+            isTextFieldFocused = true
+        }
     }
     
     func searchMangas() {
@@ -45,80 +86,30 @@ struct MangaAddView: View {
             switch result {
             case .success(let data):
                 if let medias = data.data?.page?.media {
-                    self.searchMangasList = []
-                    for media in medias {
-                        let manga = MangaResultModel(
-                            id: Int64(media?.id ?? 0),
+                    let mangaIDs = MangaModel.fetchMangaIDs(moc: moc)
+                    
+                    self.searchMangasList = medias.compactMap({ media in
+                        guard let id = media?.id, !mangaIDs.contains(Int64(id)) else {
+                            return nil
+                        }
+                        return MangaResultModel(
+                            id: Int64(id),
                             title: media?.title?.native ?? "",
                             coverImage: media?.coverImage?.large ?? ""
                         )
-                        self.searchMangasList.append(manga)
-                    }
+                    })
                 }
             case .failure(let err):
                 print("error: \(err)")
             }
+            self.isSearching = false
         }
-        self.isSearching = false
     }
     
 }
 
 #Preview {
     MangaAddView()
+        .environment(\.managedObjectContext, CoreDataManager.preview.container.viewContext)
 }
 
-class MangaResultModel : Identifiable {
-    var id: Int64
-    var title: String
-    var coverImage: String
-    
-    init(id: Int64, title: String, coverImage: String) {
-        self.id = id
-        self.title = title
-        self.coverImage = coverImage
-    }
-}
-
-struct MangaSearhResultView : View {
-    
-    @Binding var searchMangasList: [MangaResultModel]
-    @Environment(\.dismiss) var dismiss
-    @Environment(\.managedObjectContext) var moc
-    
-    var body: some View {
-        LazyVGrid(columns: [GridItem(.flexible()),GridItem(.flexible()),GridItem(.flexible())], spacing: 16) {
-            ForEach($searchMangasList) { manga in
-                Button(action: {
-                    let newManga = MangaModel(
-                        context: self.moc
-                    )
-                    newManga.id = manga.id
-                    newManga.title = manga.title.wrappedValue
-                    newManga.downloadCover(url: manga.wrappedValue.coverImage, completion: { result in
-                        if result {
-                            CoreDataManager.shared.saveContext()
-                            dismiss()
-                        }
-                    })
-                }) {
-                    VStack {
-                        AsyncImage(url: URL(string: manga.coverImage.wrappedValue)) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                            case .success(let image):
-                                image.resizable()
-                                    .scaledToFit()
-                            case .failure(let error):
-                                Text("Failed to load image: \(error)")
-                            }
-                        }
-                        Text(manga.wrappedValue.title).font(.caption)
-                    }
-                }
-            }
-        }.padding()
-    }
-    
-}

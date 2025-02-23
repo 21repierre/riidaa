@@ -15,8 +15,8 @@ extension MangaModel {
 
     @nonobjc public class func fetchRequest() -> NSFetchRequest<MangaModel> {
         return NSFetchRequest<MangaModel>(entityName: "MangaModel")
-    }
-
+    }    
+    
     @NSManaged public var cover: Data?
     @NSManaged public var id: Int64
     @NSManaged public var title: String
@@ -67,7 +67,7 @@ extension MangaModel {
     }
     
     public func getCover() -> UIImage? {
-        print("has cover \(self.cover != nil)")
+//        print("has cover \(self.cover != nil)")
         if let cover = self.cover {
             return UIImage(data: cover)
         } else {
@@ -90,8 +90,33 @@ extension MangaModel {
         
     }
     
+    static func fetchMangaIDs(moc: NSManagedObjectContext) -> Set<Int64> {
+        let fetchRequest: NSFetchRequest<MangaModel> = MangaModel.fetchRequest()
+        do {
+            let mangas = try moc.fetch(fetchRequest)
+            return Set(mangas.map { $0.id })
+        } catch {
+            print("Error fetching mangas: \(error)")
+            return []
+        }
+    }
+
+    
 }
 
 extension MangaModel : Identifiable {
 
+}
+
+extension CoreDataManager {
+    
+    static var sampleManga: MangaModel {
+        let manga = MangaModel(context: CoreDataManager.shared.container.viewContext)
+        manga.id = 2
+        manga.title = "This is another manga with a long title"
+        manga.insertIntoVolumes(CoreDataManager.sampleVolume, at: 0)
+        
+        return manga
+    }
+    
 }
