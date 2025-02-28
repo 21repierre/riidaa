@@ -30,8 +30,8 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .listStyle(.insetGrouped)
-            .background(.background)
-            .scrollContentBackground(.hidden)
+            .background(.background) 
+            .scrollContentBackground(.hidden) 
         }
     }
     
@@ -39,4 +39,11 @@ struct SettingsView: View {
 
 #Preview {
     SettingsView()
+        .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
+        .environmentObject(AppManager())
+        .onAppear(perform: {
+            let dic = Dictionary(context: CoreDataManager.shared.context)
+            dic.name = "Jitandex"
+            dic.path = "/Users/repierre/Documents/mangas/Mokuro/YamadaKun To 7Nin No Majo/jitendex-yomitan"
+        })
 }

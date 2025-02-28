@@ -13,11 +13,17 @@ import Apollo
 struct redaaApp: App {
     
     let CoreController = CoreDataManager.shared
+    @StateObject var appManager: AppManager = AppManager()
     
     var body: some Scene {
         WindowGroup {
-            HomeView()
-                .environment(\.managedObjectContext, CoreController.context)
+            if appManager.isLoading {
+                Text("Loading...")
+            } else {
+                HomeView()
+                    .environment(\.managedObjectContext, CoreController.context)
+                    .environmentObject(appManager)
+            }
         }
     }
 }

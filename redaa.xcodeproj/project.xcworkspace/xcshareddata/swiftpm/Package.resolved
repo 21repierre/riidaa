@@ -1,5 +1,5 @@
 {
-  "originHash" : "a33ce4afb93774d9216e3c56f9ec37b2e70e69498dc22e01eefa211b8d8fcf09",
+  "originHash" : "d17644267fa45516b1e7736ac43e49cc000c0da7bb03b7e8bc38e5bf68d91998",
   "pins" : [
     {
       "identity" : "apollo-ios",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "3601245191ffb0aa237ca408d7b4dd03b4d9d7eb",
         "version" : "1.1.7"
+      }
+    },
+    {
+      "identity" : "redaadic",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/21repierre/redaaDic",
+      "state" : {
+        "branch" : "main",
+        "revision" : "7fe79a80455d02eb2d313d3e6cfd942c16a6636f"
       }
     },
     {

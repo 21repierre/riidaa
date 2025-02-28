@@ -19,7 +19,6 @@ struct VolumeListView: View {
     @State private var processingProgress: CGFloat = 0.0
     
     private var dismissDisabled: Bool {
-        print(processingStatus)
         return processingStatus == ProcessingStatus.STARTED
     }
     
@@ -179,7 +178,6 @@ extension VolumeListView {
                 
                 self.processingMessage = "Volume processed."
             } catch {
-                print(error)
                 self.processingStatus = ProcessingStatus.ERROR
                 self.processingMessage = error.localizedDescription
             }

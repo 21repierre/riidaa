@@ -1,30 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24B2082" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24D70" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
     <entity name="Dictionary" representedClassName=".Dictionary" syncable="YES">
-        <attribute name="attribution" optional="YES" attributeType="String"/>
-        <attribute name="d_description" optional="YES" attributeType="String"/>
-        <attribute name="downloadUrl" optional="YES" attributeType="String"/>
-        <attribute name="format" attributeType="Integer 16" minValueString="1" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="frequencyMode" optional="YES" attributeType="String"/>
-        <attribute name="indexUrl" optional="YES" attributeType="String"/>
-        <attribute name="revision" attributeType="String"/>
-        <attribute name="sequenced" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
-        <attribute name="sourceLanguage" optional="YES" attributeType="String"/>
-        <attribute name="targetLanguage" optional="YES" attributeType="String"/>
-        <attribute name="title" attributeType="String"/>
-        <attribute name="url" optional="YES" attributeType="String"/>
-        <relationship name="entries" toMany="YES" deletionRule="Cascade" destinationEntity="DictionaryEntry" inverseName="dictionary" inverseEntity="DictionaryEntry"/>
-    </entity>
-    <entity name="DictionaryEntry" representedClassName=".DictionaryEntry" syncable="YES">
-        <attribute name="definition_tags" attributeType="Transformable"/>
-        <attribute name="definitions" attributeType="Transformable"/>
-        <attribute name="deinflection_ids" attributeType="Transformable"/>
-        <attribute name="kanji" attributeType="String"/>
-        <attribute name="reading" attributeType="String"/>
-        <attribute name="score" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="sequence_id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="term_tags" attributeType="Transformable"/>
-        <relationship name="dictionary" maxCount="1" deletionRule="Nullify" destinationEntity="Dictionary" inverseName="entries" inverseEntity="Dictionary"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="path" attributeType="String"/>
     </entity>
     <entity name="MangaModel" representedClassName=".MangaModel" syncable="YES">
         <attribute name="cover" optional="YES" attributeType="Binary" defaultValueString="" allowsExternalBinaryDataStorage="YES" allowsCloudEncryption="YES"/>
