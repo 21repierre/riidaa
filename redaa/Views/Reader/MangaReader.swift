@@ -16,9 +16,9 @@ public struct MangaReader: View {
     @State private var pages: [MangaPageModel] = [] // Store computed array
     @State private var currentLine = ""
     
-    @State private var parserHeight: CGFloat = 80
+    @State private var parserHeight: CGFloat = 100
     private let expandedHeight: CGFloat = 400
-    private let collapsedHeight: CGFloat = 80
+    private let collapsedHeight: CGFloat = 100
     
     public init(volume: Binding<MangaVolumeModel>, currentPage: Int) {
         self._volume = volume
@@ -30,21 +30,22 @@ public struct MangaReader: View {
         ZStack(alignment: .bottom) {
             TabView(selection: $currentPage) {
                 ForEach(pages.indices, id: \.self) { index in
-                    
                     VStack {
                         GeometryReader { geometry in
                             let scale = min(geometry.size.width / Double(pages[index].width),
                                             geometry.size.height / Double(pages[index].height))
-                            let offset = (geometry.size.height - Double(pages[index].height) * scale) / 2
+                            let offsetY = Double(pages[index].height) * scale / 2
+                            let offsetX = Double(pages[index].width) * scale / 2
                             ZStack {
                                 if abs(index - self.currentPage) <= 2 {
                                     if let imageData = pages[index].getImage() {
                                         Image(uiImage: imageData)
                                             .resizable()
                                             .scaledToFit()
-                                            .onAppear(perform: {
-                                                print(offset, geometry.size.height)
-                                            })
+//                                            .onAppear(perform: {
+//                                                print("\(offsetX), \(offsetY), \(pages[index].width), \(pages[index].height), \(geometry.size), \(geometry.safeAreaInsets)")
+//                                            })
+                                            .border(Color.red, width: 1)
                                     } else {
                                         Text("Page \(index + 1) failed to load")
                                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -56,16 +57,11 @@ public struct MangaReader: View {
                                         .resizable()
                                         .scaledToFit()
                                 }
-                                MangaReaderBoxes(boxes: pages[index].getBoxes(), scale: scale, offset: offset, currentLine: $currentLine)
+                                MangaReaderBoxes(boxes: pages[index].getBoxes(), scale: scale, offsetX: offsetX, offsetY: offsetY, currentLine: $currentLine)
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
-//                        if currentLine != "" {
-//                            MangaReaderParserView(line: currentLine)
-//                        }
                     }
-                    
-                    
                 }
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
@@ -92,7 +88,7 @@ public struct MangaReader: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: parserHeight - 20)
                 }
-                .background(Color.white)
+                .background(Color(.systemBackground))
                 .roundedCorners(16, corners: [.topLeft, .topRight])
                 .frame(maxHeight: parserHeight)
                 .offset(y: expandedHeight - parserHeight)

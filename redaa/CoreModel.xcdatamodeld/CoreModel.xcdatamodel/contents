@@ -1,22 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24D81" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
-    <entity name="Dictionary" representedClassName=".Dictionary" syncable="YES">
-        <attribute name="attribution" optional="YES" attributeType="String"/>
-        <attribute name="author" optional="YES" attributeType="String"/>
-        <attribute name="description_" optional="YES" attributeType="String"/>
-        <attribute name="downloadUrl" optional="YES" attributeType="String"/>
-        <attribute name="format" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="frequencyMode" optional="YES" attributeType="String"/>
-        <attribute name="indexUrl" optional="YES" attributeType="String"/>
-        <attribute name="isUpdatable" attributeType="Boolean" defaultValueString="0.0" usesScalarValueType="YES"/>
-        <attribute name="revision" attributeType="String"/>
-        <attribute name="sequenced" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
-        <attribute name="sourceLanguage" optional="YES" attributeType="String"/>
-        <attribute name="targetLanguage" optional="YES" attributeType="String"/>
-        <attribute name="title" attributeType="String"/>
-        <attribute name="url" optional="YES" attributeType="String"/>
-        <relationship name="terms" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="Term" inverseName="dictionary" inverseEntity="Term"/>
-    </entity>
     <entity name="MangaModel" representedClassName=".MangaModel" syncable="YES">
         <attribute name="cover" optional="YES" attributeType="Binary" defaultValueString="" allowsExternalBinaryDataStorage="YES" allowsCloudEncryption="YES"/>
         <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
@@ -45,20 +28,5 @@
         <attribute name="x" attributeType="Integer 32" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="y" attributeType="Integer 32" defaultValueString="0.0" usesScalarValueType="YES"/>
         <relationship name="page" maxCount="1" deletionRule="Nullify" destinationEntity="MangaPageModel" inverseName="boxes" inverseEntity="MangaPageModel"/>
-    </entity>
-    <entity name="Term" representedClassName=".Term" syncable="YES">
-        <attribute name="definitions" attributeType="Binary"/>
-        <attribute name="definitionTags" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData"/>
-        <attribute name="reading" attributeType="String"/>
-        <attribute name="score" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="sequenceNumber" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="term" attributeType="String"/>
-        <attribute name="termTags" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData"/>
-        <attribute name="wordTypes" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData"/>
-        <relationship name="dictionary" maxCount="1" deletionRule="Nullify" destinationEntity="Dictionary" inverseName="terms" inverseEntity="Dictionary"/>
-        <fetchIndex name="byTerm_ReadingIndex">
-            <fetchIndexElement property="term" type="Binary" order="ascending"/>
-            <fetchIndexElement property="reading" type="Binary" order="ascending"/>
-        </fetchIndex>
     </entity>
 </model>

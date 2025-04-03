@@ -12,7 +12,7 @@ public struct TermDeinflection : Hashable {
         return lhs.term == rhs.term && lhs.deinflection == rhs.deinflection
     }
     
-    public let term: Term
+    public let term: TermDB
     public let deinflection: Deinflection
     
 }
@@ -35,50 +35,28 @@ public struct Parser {
             var possibilities: [ParsingResult] = []
             
             for i in (l...text.count-1) {
-                let cut = String(text.dropFirst(l).dropLast(i-l))
+                let cutBefore = text.index(text.startIndex, offsetBy: l)
+                let cutAfter = text.index(text.endIndex, offsetBy: l-i)
+                let cut = String(text[cutBefore..<cutAfter])
                 let deinflections = Inflection.deinflect(text: cut)
                 
                 var terms: [TermDeinflection] = []
-                
+         
+                let results = SQLiteManager.shared.findTerms(texts: deinflections.compactMap({ di in
+                    di.text
+                }))
                 for deinflection in deinflections {
-                    //                    var matchingTerms: [TermJson] = []
-                    let fetchRequest: NSFetchRequest<Term> = Term.fetchRequest()
-                    let termPredicate = NSPredicate(format: "term == %@", deinflection.text)
-                    let definitionPredicate = NSPredicate(format: "reading == %@", deinflection.text)
-                    let orPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [termPredicate, definitionPredicate])
-                    //                    let wordTypesCountPredicate = NSPredicate(format: "wordTypes[SIZE] = %d", deinflection.types.count)
-                    //
-                    //                    let finalPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [orPredicate, wordTypesCountPredicate])
-                    fetchRequest.predicate = orPredicate
-                    
-                    let results = try? CoreDataManager.shared.context.fetch(fetchRequest)
-                    if let results = results {
-                        for term in results {
-//                            print("\(term.wordTypes) - \(deinflection.types)")
-                            if term.wordTypes.count != deinflection.types.count && !(term.wordTypes.count == 1 && term.wordTypes[0] == "") {
-                                continue
-                            }
-                            var allTypesIncluded = true
-                            for dType in deinflection.types {
-                                if let _ = term.getWordTypes().firstIndex(of: dType) {
-                                    
-                                } else {
-                                    allTypesIncluded = false
-                                    break
-                                }
-                            }
-                            if allTypesIncluded {
-                                terms.append(TermDeinflection(term: term, deinflection: deinflection))
-                            }
-                        }
+                    for term in results where
+                    (term.term == deinflection.text || term.reading == deinflection.text) &&
+                    (deinflection.types.count == 0 || term.wordTypes.count == 0 || term.wordTypes == deinflection.types) {
+                        terms.append(TermDeinflection(term: term, deinflection: deinflection))
                     }
-                    
-                    
                 }
                 if !terms.isEmpty {
-                    possibilities.append(ParsingResult(original: cut, results: terms.sorted(by: {a, b in
-                        return a.term.score > b.term.score
-                    })))
+                    possibilities.append(ParsingResult(
+                        original: cut,
+                        results: terms.sorted{ $0.term.score > $1.term.score }
+                    ))
                 }
             }
             

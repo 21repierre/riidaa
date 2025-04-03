@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AF206C5F2D9E7237001544EE /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = AF206C5E2D9E7237001544EE /* SQLite */; };
 		AF33494C2D5C7413001EE9C6 /* Apollo in Frameworks */ = {isa = PBXBuildFile; productRef = AF33494B2D5C7413001EE9C6 /* Apollo */; };
 		AF33494F2D5C7540001EE9C6 /* ApolloAPI in Frameworks */ = {isa = PBXBuildFile; productRef = AF33494E2D5C7540001EE9C6 /* ApolloAPI */; };
 		AF3349512D5C7545001EE9C6 /* ApolloSQLite in Frameworks */ = {isa = PBXBuildFile; productRef = AF3349502D5C7545001EE9C6 /* ApolloSQLite */; };
@@ -78,6 +79,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF206C5F2D9E7237001544EE /* SQLite in Frameworks */,
 				AF3349892D5C895F001EE9C6 /* Anilist in Frameworks */,
 				AF33494F2D5C7540001EE9C6 /* ApolloAPI in Frameworks */,
 				AF33494C2D5C7413001EE9C6 /* Apollo in Frameworks */,
@@ -162,6 +164,7 @@
 				AF3349882D5C895F001EE9C6 /* Anilist */,
 				AFD6911C2D61FF9D001F8C04 /* ZIPFoundation */,
 				AFD691392D63BD26001F8C04 /* LazyPager */,
+				AF206C5E2D9E7237001544EE /* SQLite */,
 			);
 			productName = redaa;
 			productReference = AF3349062D5C5BB6001EE9C6 /* redaa.app */;
@@ -250,6 +253,7 @@
 				AF3349872D5C895F001EE9C6 /* XCLocalSwiftPackageReference "Anilist" */,
 				AFD6911B2D61FF9D001F8C04 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				AFD691382D63BD26001F8C04 /* XCRemoteSwiftPackageReference "LazyPager" */,
+				AF206C5D2D9E7237001544EE /* XCRemoteSwiftPackageReference "SQLite" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AF3349072D5C5BB6001EE9C6 /* Products */;
@@ -661,6 +665,14 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		AF206C5D2D9E7237001544EE /* XCRemoteSwiftPackageReference "SQLite" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stephencelis/SQLite.swift";
+			requirement = {
+				kind = exactVersion;
+				version = 0.15.3;
+			};
+		};
 		AF33494A2D5C7413001EE9C6 /* XCRemoteSwiftPackageReference "apollo-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apollographql/apollo-ios.git";
@@ -688,6 +700,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		AF206C5E2D9E7237001544EE /* SQLite */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF206C5D2D9E7237001544EE /* XCRemoteSwiftPackageReference "SQLite" */;
+			productName = SQLite;
+		};
 		AF33494B2D5C7413001EE9C6 /* Apollo */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AF33494A2D5C7413001EE9C6 /* XCRemoteSwiftPackageReference "apollo-ios" */;

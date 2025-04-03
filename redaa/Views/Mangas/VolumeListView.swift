@@ -139,7 +139,7 @@ extension VolumeListView {
                     }
                     let img = imagesFolder.appendingPathComponent(img_path)
                     let destImg = volumeDirectory.appendingPathComponent(img_path)
-                    print(destImg)
+//                    print(destImg)
                     try? fileManager.removeItem(at: destImg)
                     try fileManager.moveItem(at: img, to: destImg)
                     
@@ -172,7 +172,7 @@ extension VolumeListView {
                         
                         newPage.addToBoxes(pageBlock)
                     }
-                    print(newPage.number, newPage.boxes.count)
+//                    print(newPage.number, newPage.boxes.count)
                     self.processingProgress = i
                 }
                 
@@ -187,7 +187,7 @@ extension VolumeListView {
             
             DispatchQueue.main.async {
                 if self.processingStatus != ProcessingStatus.ERROR {
-                    CoreDataManager.shared.saveContext()
+                    try? moc.save()
                     self.processingStatus = ProcessingStatus.FINISHED
                 }
             }

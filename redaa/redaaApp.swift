@@ -13,7 +13,7 @@ import Apollo
 struct redaaApp: App {
     
     let CoreController = CoreDataManager.shared
-    @StateObject var appManager: AppManager = AppManager()
+    @StateObject var appManager: AppManager = AppManager.shared
     
     var body: some Scene {
         WindowGroup {

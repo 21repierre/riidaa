@@ -11,7 +11,8 @@ struct MangaReaderBoxes: View {
     
     var boxes: [PageBoxModel]
     var scale: Double
-    var offset: Double
+    var offsetX: Double
+    var offsetY: Double
     
     @Binding var currentLine: String
     
@@ -25,9 +26,9 @@ struct MangaReaderBoxes: View {
                     width: Double(box.width) * scale,
                     height: Double(box.height) * scale
                 )
-                .position(
-                    x: Double(box.x + box.width / 2) * scale,
-                    y: Double(box.y + box.height / 2) * scale + offset
+                .offset(
+                    x: Double(box.x + box.width / 2) * scale - offsetX,
+                    y: Double(box.y + box.height / 2) * scale - offsetY
                 )
                 .onTapGesture {
                     currentLine = box.text

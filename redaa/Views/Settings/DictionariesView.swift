@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import redaaDic
 import CoreData
 
 struct DictionariesView: View {
@@ -25,8 +24,7 @@ struct DictionariesView: View {
     var body: some View {
         ScrollView {
             ForEach($appManager.dictionaries) { dictionary in
-                let dictionary = dictionary.wrappedValue
-                DictionaryView(dictionary: dictionary)
+                DictionaryView(dictionary: dictionary.wrappedValue)
             }
         }
         .navigationTitle("Dictionaries")
@@ -92,7 +90,6 @@ struct DictionariesView: View {
     
     func processZipFile(path: URL) {
         DispatchQueue.global(qos: .userInitiated).async {
-            var dicId: NSManagedObjectID? = nil
             let fileManager = FileManager.default
             let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("dictionaries")
             let dicDirectory = documents.appendingPathComponent(UUID().uuidString)
@@ -123,87 +120,44 @@ struct DictionariesView: View {
                 else {
                     throw NSError(domain: "DictionaryImport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Missing mandatory properties"])
                 }
+                let sequenced = dicJson["sequenced"] as? Bool
+                let format = dicJson["format"] as? Int
+                let author = dicJson["author"] as? String
+                let isUpdatable = dicJson["isUpdatable"] as? Bool
+                let indexUrl = dicJson["indexUrl"] as? String
+                let downloadUrl = dicJson["downloadUrl"] as? String
+                let url = dicJson["url"] as? String
+                let description = dicJson["description"] as? String
+                let attribution = dicJson["attribution"] as? String
+                let sourceLanguage = dicJson["sourceLanguage"] as? String
+                let targetLanguage = dicJson["targetLanguage"] as? String
+                let frequencyMode = dicJson["frequencyMode"] as? String
+                
+                guard let dictionary = SQLiteManager.shared.insertDictionary(revision: revision, title: title, sequenced: sequenced ?? false, format: format ?? 3, author: author, isUpdatable: isUpdatable ?? false, indexUrl: indexUrl, downloadUrl: downloadUrl, url: url, description: description, attribution: attribution, sourceLanguage: sourceLanguage, targetLanguage: targetLanguage, frequencyMode: frequencyMode) else {
+                    throw NSError(domain: "DictionaryImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Error saving dictionary"])
+                }
                 
                 
-                let newDic = Dictionary(context: CoreDataManager.shared.context)
-                newDic.title = title
-                newDic.revision = revision
-                
-                if let sequenced = dicJson["sequenced"] as? Bool {
-                    newDic.sequenced = sequenced
-                }
-                if let format = dicJson["format"] as? Int16 {
-                    newDic.format = format
-                }
-                if let author = dicJson["author"] as? String {
-                    newDic.author = author
-                }
-                if let isUpdatable = dicJson["isUpdatable"] as? Bool {
-                    newDic.isUpdatable = isUpdatable
-                }
-                if let indexUrl = dicJson["indexUrl"] as? String {
-                    newDic.indexUrl = indexUrl
-                }
-                if let downloadUrl = dicJson["downloadUrl"] as? String {
-                    newDic.downloadUrl = downloadUrl
-                }
-                if let url = dicJson["url"] as? String {
-                    newDic.url = url
-                }
-                if let description = dicJson["description"] as? String {
-                    newDic.description_ = description
-                }
-                if let attribution = dicJson["attribution"] as? String {
-                    newDic.attribution = attribution
-                }
-                if let sourceLanguage = dicJson["sourceLanguage"] as? String {
-                    newDic.sourceLanguage = sourceLanguage
-                }
-                if let targetLanguage = dicJson["targetLanguage"] as? String {
-                    newDic.targetLanguage = targetLanguage
-                }
-                if let frequencyMode = dicJson["frequencyMode"] as? String {
-                    newDic.frequencyMode = frequencyMode
+                DispatchQueue.main.async {
+                    self.processingProgress += 1
                 }
                 
-                try CoreDataManager.shared.context.save()
-                dicId = newDic.objectID
-                self.processingProgress += 1
-            } catch {
-                self.processingStatus = ProcessingStatus.ERROR
-                self.processingMessage = error.localizedDescription
-                return
-            }
-            
-            guard let dicId = dicId else {
-                self.processingStatus = ProcessingStatus.ERROR
-                return
-            }
-            
-            let backgroundContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-            backgroundContext.retainsRegisteredObjects = false
-            backgroundContext.parent = CoreDataManager.shared.context
-            
-            backgroundContext.perform {
+                
                 var i = 1
-                var tI = 0
-                var dic = backgroundContext.object(with: dicId) as! Dictionary
-                
                 while true {
+                    
                     let filename = "term_bank_\(i).json"
                     let filepath = dicDirectory.appending(component: filename)
                     
                     guard let fileContent = try? Data(contentsOf: filepath) else {
                         break
                     }
-                    autoreleasepool {
+                    try autoreleasepool {
                         let termsJson = try? JSONSerialization.jsonObject(with: fileContent)
                         guard let termsJson = termsJson as? [[Any]] else {
-                            //TODO: error
-                            return
+                            throw NSError(domain: "DictionaryImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Error decoding terms"])
                         }
-                        
-                        for t in termsJson {
+                        let insertTerms: [TermInsertion] = termsJson.compactMap({ t in
                             guard let term = t[0] as? String,
                                   let reading = t[1] as? String,
                                   let wordTypesJson = t[3] as? String,
@@ -212,53 +166,36 @@ struct DictionariesView: View {
                                   let sequence  = t[6] as? Int64,
                                   let termTagsJson = t[7]  as? String
                             else {
-                                continue
+                                return nil
                             }
-                            let definitionTagsJson = t[2] as? String ?? ""
-                            let definitionTags = definitionTagsJson.components(separatedBy: " ")
-                            let termTags = termTagsJson.components(separatedBy: " ")
-                            let wordTypesArray = wordTypesJson.components(separatedBy: " ")
                             guard let definitionsEncoded = try? JSONSerialization.data(withJSONObject: definitions, options: []) else {
-                                continue
+                                return nil
                             }
-                            
-                            let newTerm = Term(context: backgroundContext)
-                            newTerm.term = term
-                            newTerm.reading = reading
-                            newTerm.definitionTags = definitionTags
-                            newTerm.wordTypes = wordTypesArray
-                            newTerm.score = score
-                            newTerm.definitions = definitionsEncoded
-                            newTerm.termTags = termTags
-                            newTerm.sequenceNumber = sequence
-                            
-                            newTerm.dictionary = dic
-                            
-                            tI += 1
+                            let definitionTags = t[2] as? String ?? ""
+                            return TermInsertion(term: term, reading: reading, definitionTags: definitionTags, wordTypes: wordTypesJson, score: score, definitions: definitionsEncoded, sequence: sequence, termTags: termTagsJson, dictionaryId: dictionary.id)
+                        })
+                        guard SQLiteManager.shared.insertTerms(termsInsert: insertTerms) != nil else {
+                            throw NSError(domain: "DictionaryImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Error saving terms"])
+                        }
+                        
+                        i += 1
+                        
+                        DispatchQueue.main.async {
+                            self.processingProgress += 1
                         }
                     }
-                    i += 1
-                    
-                    if tI % 20000 == 0 {
-                        try! backgroundContext.save()
-                        backgroundContext.reset()
-                        try! CoreDataManager.shared.context.save()
-                        CoreDataManager.shared.context.reset()
-                        dic = backgroundContext.object(with: dicId) as! Dictionary
-                    }
-                    self.processingProgress += 1
                 }
-                try! backgroundContext.save()
-                backgroundContext.reset()
-                try! CoreDataManager.shared.context.save()
-                CoreDataManager.shared.context.reset()
                 
                 DispatchQueue.main.async {
-                    appManager.loadDictionaries()
+                    appManager.dictionaries.append(dictionary)
                     self.processingProgress = self.processingProgressMax
                     self.processingMessage = "Dictionary processed."
                     self.processingStatus = ProcessingStatus.FINISHED
                 }
+            } catch {
+                self.processingStatus = ProcessingStatus.ERROR
+                self.processingMessage = error.localizedDescription
+                return
             }
         }
     }
@@ -268,11 +205,25 @@ struct DictionariesView: View {
 #Preview {
     DictionariesView()
         .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
-        .environmentObject(AppManager())
+        .environmentObject(AppManager.shared)
         .onAppear(perform: {
-            let dic = Dictionary(context: CoreDataManager.shared.context)
-            dic.title = "Jitandex"
-            dic.revision = "2025.01.12"
-            dic.author = "Jitandex team"
+            let dic = DictionaryDB(
+                id: 1,
+                revision: "2025.01.10.0",
+                title: "Jitandex",
+                sequenced: true,
+                format: 3,
+                author: "Stephen Kraus",
+                isUpdatable: true,
+                indexUrl: "https://jitendex.org/static/yomitan.json",
+                downloadUrl: "https://github.com/stephenmk/stephenmk.github.io/releases/latest/download/jitendex-yomitan.zip",
+                url: "https://jitendex.org",
+                description: "Jitendex is updated with new content every week. Click the 'Check for Updates' button in the Yomitan 'Dictionaries' menu to upgrade to the latest version.\n\nIf Jitendex is useful for you, please consider giving the project a star on GitHub. You can also leave a tip on Ko-fi.\nVisit https://ko-fi.com/jitendex\n\nMany thanks to everyone who has helped to fund Jitendex.\n\n• epistularum\n• 昭玄大统\n• Maciej Jur\n• Ian Strandberg\n• Kip\n• Lanwara\n• Sky\n• Adam\n• Emanuel",
+                attribution: "© CC BY-SA 4.0 Stephen Kraus 2023-2025\n\nYou are free to use, modify, and redistribute Jitendex files under the terms of the Creative Commons Attribution-ShareAlike License (V4.0)\n\nJitendex includes material from several copyrighted sources in compliance with the terms and conditions of those projects.\n\n• JMdict (EDICT, etc.) dictionary data is provided by the Electronic Dictionaries Research Group. Visit edrdg.org for more information.\n• Example sentences (Japanese and English) are provided by Tatoeba (https://tatoeba.org/). This data is licensed CC BY 2.0 FR.\n• Positional information for the furigana displayed in headwords is provided by the JmdictFurigana project. This data is distributed under a Creative Commons Attribution-ShareAlike License.",
+                sourceLanguage: "ja",
+                targetLanguage: "en",
+                frequencyMode: nil
+            )
+            AppManager.shared.dictionaries.append(dic)
         })
 }
