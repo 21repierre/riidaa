@@ -80,8 +80,8 @@ struct MangaCover : View {
                     Spacer()
                 }
                 .frame(height: 49)
-                    .padding(.top, 7)
-                    .padding([.leading, .trailing], 1)
+                .padding(.top, 7)
+                .padding([.leading, .trailing], 1)
             }
             .frame(height: 226)
             .contextMenu {
@@ -98,14 +98,9 @@ struct MangaCover : View {
 }
 
 #Preview {
-    
     MangaListView()
         .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
         .onAppear(perform: {
-//            let m1 = MangaModel(context: CoreDataManager.shared.container.viewContext)
-//            m1.title = "A very long title that should not fit"
-//            m1.id = 1
             print(CoreDataManager.sampleManga)
         })
-    
 }

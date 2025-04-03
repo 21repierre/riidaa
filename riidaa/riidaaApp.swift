@@ -18,7 +18,10 @@ struct riidaaApp: App {
     var body: some Scene {
         WindowGroup {
             if appManager.isLoading {
-                Text("Loading...")
+                VStack {
+                    ProgressView()
+                    Text("Loading dictionaries")
+                }
             } else {
                 HomeView()
                     .environment(\.managedObjectContext, CoreController.context)

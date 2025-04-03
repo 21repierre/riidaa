@@ -115,7 +115,7 @@ extension MangaReaderParserView {
                         dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)
                     ),
                     deinflection: Deinflection(text: "思っている", inflections: [
-                        InflectionRule.te, InflectionRule.teiru
+                        InflectionRule.teiru, InflectionRule.te
                     ], types: []))
             ]),
             ParsingResult(original: "のか", results: [
@@ -140,7 +140,7 @@ struct ResultView: View {
             if !result.deinflection.inflections.isEmpty {
                 HStack(spacing: 0) {
                     Text("🚂")
-                    ForEach(result.deinflection.inflections) { rule in
+                    ForEach(result.deinflection.inflections.reversed()) { rule in
                         Text("«")
                             .padding([.horizontal], 3)
                         Text(rule.rawValue)

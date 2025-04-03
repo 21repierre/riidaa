@@ -22,7 +22,7 @@ struct MangaAddView: View {
         VStack {
             TextField("Manga title...", text: $mangaTitle, onCommit: searchMangas)
                 .padding(10)
-                .background(Color(.systemGray6))
+                .background(Color(.secondarySystemBackground))
                 .cornerRadius(10)
                 .overlay(
                     HStack {
@@ -73,11 +73,11 @@ struct MangaAddView: View {
             }
             
         }
-        //        .padding(5)
         .padding(.top, 20)
         .onAppear {
             isTextFieldFocused = true
         }
+        .background(Color(.systemBackground))
     }
     
     func searchMangas() {

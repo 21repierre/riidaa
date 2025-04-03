@@ -54,8 +54,6 @@ class CoreDataManager: ObservableObject {
     
     func newBackgroundContext() -> NSManagedObjectContext {
         let context = self.container.newBackgroundContext()
-//        context.automaticallyMergesChangesFromParent = true
-//        context.retainsRegisteredObjects = false
         return context
     }
 }

@@ -12,18 +12,6 @@ struct VolumeComponent: View {
     @ObservedObject var volume: MangaVolumeModel
     
     var body: some View {
-        //        let totalPages = volume.pages.count
-        //        NavigationLink(destination: MangaReader(volume: .init(get: {
-        //            return volume
-        //        }, set: {_ in}), currentPage: Int(volume.lastReadPage))) {
-        //            VStack(alignment: .leading) {
-        //                Text("Volume \(volume.number)")
-        //
-        //
-        //                Text("\(volume.lastReadPage+1)/\(totalPages)")
-        //            }
-        //            .foregroundColor(.primary)
-        //        }
         let totalPages = volume.pages.count
         let currentPage = volume.lastReadPage + 1
         let progress = totalPages > 0 ? Double(currentPage) / Double(totalPages) : 0
