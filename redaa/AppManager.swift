@@ -15,16 +15,21 @@ class AppManager : ObservableObject {
     
     init() {
         DispatchQueue.main.async {
-            let request: NSFetchRequest<Dictionary> = Dictionary.fetchRequest()
-            
-            self.dictionaries = try! CoreDataManager.shared.context.fetch(request)
-            
-            for dic in self.dictionaries {
-                try? dic.loadDictionary()
-            }
-            
-            self.isLoading = false
+            self.loadDictionaries()
         }
+    }
+    
+    func loadDictionaries() {
+        self.isLoading = true
+        let request: NSFetchRequest<Dictionary> = Dictionary.fetchRequest()
+        
+        self.dictionaries = try! CoreDataManager.shared.context.fetch(request)
+        
+        for dictionary in dictionaries {
+            print("dic \(dictionary.terms.count)")
+        }
+        
+        self.isLoading = false
     }
     
 }

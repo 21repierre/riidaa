@@ -16,6 +16,10 @@ public struct MangaReader: View {
     @State private var pages: [MangaPageModel] = [] // Store computed array
     @State private var currentLine = ""
     
+    @State private var parserHeight: CGFloat = 80
+    private let expandedHeight: CGFloat = 400
+    private let collapsedHeight: CGFloat = 80
+    
     public init(volume: Binding<MangaVolumeModel>, currentPage: Int) {
         self._volume = volume
         self._currentPage = State(initialValue: currentPage)
@@ -23,7 +27,7 @@ public struct MangaReader: View {
     }
     
     public var body: some View {
-        VStack {
+        ZStack(alignment: .bottom) {
             TabView(selection: $currentPage) {
                 ForEach(pages.indices, id: \.self) { index in
                     
@@ -38,12 +42,11 @@ public struct MangaReader: View {
                                         Image(uiImage: imageData)
                                             .resizable()
                                             .scaledToFit()
-                                        //                                        .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
                                             .onAppear(perform: {
                                                 print(offset, geometry.size.height)
                                             })
                                     } else {
-                                        Text("Page \(index + 1)")
+                                        Text("Page \(index + 1) failed to load")
                                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                                             .background(Color.black)
                                             .foregroundColor(.white)
@@ -57,30 +60,16 @@ public struct MangaReader: View {
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
-                        if currentLine != "" {
-                            Text(currentLine)
-                                .onAppear(perform: {
-                                    print("appear \(currentLine)")
-                                })
-                        }
+//                        if currentLine != "" {
+//                            MangaReaderParserView(line: currentLine)
+//                        }
                     }
                     
                     
                 }
             }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never)) // Horizontal paging
-            .overlay(
-                HStack {
-                    Spacer()
-                    Text("\(currentPage + 1) / \(volume.pages.count)")
-                        .padding()
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(8)
-                        .foregroundColor(.white)
-                        .padding()
-                },
-                alignment: .bottomTrailing
-            )
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .padding(.bottom, collapsedHeight)
             .onChange(of: currentPage) { newPage in
                 self.currentLine = ""
                 volume.lastReadPage = Int64(newPage)
@@ -88,7 +77,42 @@ public struct MangaReader: View {
                     CoreDataManager.shared.saveContext()
                 }
             }
+//            .onChange(of: currentLine) { newLine in
+//                print(newLine)
+//            }
+            
+            GeometryReader { geometry in
+                VStack {
+                    Capsule()
+                        .frame(width: 50, height: 6)
+                        .foregroundColor(.gray)
+                        .padding(.top, 8)
+                    
+                    MangaReaderParserView(line: currentLine)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: parserHeight - 20)
+                }
+                .background(Color.white)
+                .roundedCorners(16, corners: [.topLeft, .topRight])
+                .frame(maxHeight: parserHeight)
+                .offset(y: expandedHeight - parserHeight)
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            let newHeight = parserHeight - value.translation.height
+                            parserHeight = min(max(newHeight, collapsedHeight), expandedHeight)
+                        }
+                        .onEnded { _ in
+                            withAnimation {
+                                parserHeight = (parserHeight > (collapsedHeight + expandedHeight) / 2) ? expandedHeight : collapsedHeight
+                            }
+                        }
+                )
+            }
+            .frame(height: expandedHeight)
         }
+        .navigationTitle("\(currentPage + 1)/\(volume.pages.count)")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

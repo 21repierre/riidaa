@@ -110,6 +110,6 @@ struct MangaAddView: View {
 
 #Preview {
     MangaAddView()
-        .environment(\.managedObjectContext, CoreDataManager.preview.container.viewContext)
+        .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
 }
 

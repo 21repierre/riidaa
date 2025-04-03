@@ -16,7 +16,8 @@ struct VolumeListView: View {
     @State private var isPickingVolume = false
     @State private var processingStatus = ProcessingStatus.NOTHING
     @State private var processingMessage: String = "Processing volume..."
-    @State private var processingProgress: CGFloat = 0.0
+    @State private var processingProgress: Int = 0
+    @State private var processingProgressMax: Int = 0
     
     private var dismissDisabled: Bool {
         return processingStatus == ProcessingStatus.STARTED
@@ -40,6 +41,8 @@ struct VolumeListView: View {
         .fileImporter(isPresented: $isPickingVolume, allowedContentTypes: [.zip]) { result in
             self.processingMessage = "Processing volume..."
             self.processingStatus = ProcessingStatus.STARTED
+            self.processingProgress = 0
+            self.processingProgressMax = 0
             switch result {
             case .success(let file):
                 processZipFile(path: file)
@@ -58,7 +61,7 @@ struct VolumeListView: View {
             }
             
         ) {
-            VolumeProcessing(message: $processingMessage, status: $processingStatus, progressValue: $processingProgress)
+            VolumeProcessing(message: $processingMessage, status: $processingStatus, progressValue: $processingProgress, progressMaxValue: $processingProgressMax)
                 .interactiveDismissDisabled(dismissDisabled)
         }.onAppear(perform: {
             print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("mangas"))
@@ -122,7 +125,7 @@ extension VolumeListView {
                 guard let pages = mokuroJson["pages"] as? [[String: Any]] else {
                     throw NSError(domain: "VolumeProcessing", code: 6, userInfo: [NSLocalizedDescriptionKey: "Missing pages in mokuro"])
                 }
-                let nPages = CGFloat(pages.count)
+                self.processingProgressMax = pages.count
                 
                 let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("mangas")
                 let volumeDirectory = documents.appendingPathComponent(String(manga.id)).appendingPathComponent(String(newVolume.number))
@@ -170,7 +173,7 @@ extension VolumeListView {
                         newPage.addToBoxes(pageBlock)
                     }
                     print(newPage.number, newPage.boxes.count)
-                    self.processingProgress = CGFloat(i)/nPages
+                    self.processingProgress = i
                 }
                 
                 
@@ -204,13 +207,14 @@ struct VolumeProcessing: View {
     
     @Binding var message: String
     @Binding var status: ProcessingStatus
-    @Binding var progressValue: CGFloat
+    @Binding var progressValue: Int
+    @Binding var progressMaxValue: Int
     
     var body: some View {
         VStack(spacing: 40) {
             switch self.status {
             case .STARTED:
-                CircularProgressView(progress: progressValue)
+                CircularProgressView(progress: progressValue, progressMax: progressMaxValue)
                     .frame(width: 150, height: 150)
                 
             case .FINISHED:

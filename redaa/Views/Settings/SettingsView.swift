@@ -43,7 +43,7 @@ struct SettingsView: View {
         .environmentObject(AppManager())
         .onAppear(perform: {
             let dic = Dictionary(context: CoreDataManager.shared.context)
-            dic.name = "Jitandex"
-            dic.path = "/Users/repierre/Documents/mangas/Mokuro/YamadaKun To 7Nin No Majo/jitendex-yomitan"
+            dic.title = "Jitandex"
+//            dic.path = "/Users/repierre/Documents/mangas/Mokuro/YamadaKun To 7Nin No Majo/jitendex-yomitan"
         })
 }

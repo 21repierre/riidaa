@@ -6,11 +6,12 @@
 //
 
 import SwiftUI
-import redaaDic
 
 struct DictionaryView: View {
     
-    @ObservedObject var dictionary: RedaaDictionary
+    @ObservedObject var dictionary: Dictionary
+    @Environment(\.managedObjectContext) var moc
+    @EnvironmentObject var appManager: AppManager
     
     var body: some View {
         HStack {
@@ -47,6 +48,18 @@ struct DictionaryView: View {
         .task {
             await dictionary.fetchUpdate()
         }
+        .contextMenu {
+            Button(role: .destructive) {
+                autoreleasepool {
+                    moc.delete(dictionary)
+                    let idx = appManager.dictionaries.firstIndex(of: dictionary)!
+                    appManager.dictionaries.remove(at: idx)
+                    CoreDataManager.shared.saveContext()
+                }
+            } label: {
+                Label("Delete dictionary", systemImage: "trash")
+            }
+        }
     }
     
 }
@@ -54,3 +67,14 @@ struct DictionaryView: View {
 //#Preview {
 //    DictionaryView()
 //}
+#Preview {
+    DictionariesView()
+        .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
+        .environmentObject(AppManager())
+        .onAppear(perform: {
+            let dic = Dictionary(context: CoreDataManager.shared.context)
+            dic.title = "Jitandex"
+            dic.revision = "2025.01.12"
+            dic.author = "Jitandex team."
+        })
+}

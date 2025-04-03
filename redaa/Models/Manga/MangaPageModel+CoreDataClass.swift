@@ -25,7 +25,6 @@ public class MangaPageModel: NSManagedObject {
                 .appendingPathComponent("mangas")
                 .appendingPathComponent(String(volume.manga.id))
                 .appendingPathComponent(String(volume.number))
-            print(self.image)
             let data = try Data(contentsOf: volumeDir.appendingPathComponent(self.image))
             return UIImage(data: data)
         } catch {

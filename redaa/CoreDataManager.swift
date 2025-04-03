@@ -9,13 +9,12 @@ import CoreData
 
 class CoreDataManager: ObservableObject {
     
-//    static let shared = CoreDataManager()
     private static var runningInstance = CoreDataManager()
     
     static var shared: CoreDataManager {
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"{
             return CoreDataManager.preview
-        }else{
+        } else{
             return CoreDataManager.runningInstance
         }
     }
@@ -36,24 +35,10 @@ class CoreDataManager: ObservableObject {
         return container.viewContext
     }
     
-    static let preview: CoreDataManager = {
+    private static let preview: CoreDataManager = {
         let controller = CoreDataManager(inMemory: true)
         let context = controller.container.viewContext
         
-//        let m1 = MangaModel(context: context)
-//        m1.title = "This is a really long title for a manga"
-//        m1.id = 1
-//        let entity = NSEntityDescription.entity(forEntityName: "MangaModel", in: context)!
-//        let manga = NSManagedObject(entity: entity, insertInto: context)
-//        
-//        manga.setValue("This is a really long title for a manga", forKey: "title")
-//        manga.setValue(1, forKey: "id")
-        
-//        do {
-//                try context.save()
-//            } catch {
-//                print("Failed to save preview context:", error)
-//            }
         return controller
     }()
     
@@ -65,5 +50,12 @@ class CoreDataManager: ObservableObject {
         } catch {
             print("Failed to save Redaa Core Data:", error)
         }
+    }
+    
+    func newBackgroundContext() -> NSManagedObjectContext {
+        let context = self.container.newBackgroundContext()
+//        context.automaticallyMergesChangesFromParent = true
+//        context.retainsRegisteredObjects = false
+        return context
     }
 }

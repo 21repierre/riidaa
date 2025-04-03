@@ -125,6 +125,6 @@ struct MangaAddResultView : View {
         MangaResultModel(id: 36014, title: "わんぴいす", coverImage: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx95552-UbNjuCvgmBBM.jpg"),
         MangaResultModel(id: 39005, title: "ONE PIECE episode A", coverImage: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx117802-CsCjUyuG4lSB.jpg"),
     ]))
-    .environment(\.managedObjectContext, CoreDataManager.preview.container.viewContext)
+    .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
     
 }

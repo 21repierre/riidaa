@@ -12,7 +12,6 @@
 		AF3349512D5C7545001EE9C6 /* ApolloSQLite in Frameworks */ = {isa = PBXBuildFile; productRef = AF3349502D5C7545001EE9C6 /* ApolloSQLite */; };
 		AF3349862D5C892B001EE9C6 /* Anilist in Frameworks */ = {isa = PBXBuildFile; productRef = AF3349852D5C892B001EE9C6 /* Anilist */; };
 		AF3349892D5C895F001EE9C6 /* Anilist in Frameworks */ = {isa = PBXBuildFile; productRef = AF3349882D5C895F001EE9C6 /* Anilist */; };
-		AFD5E6522D71E9AA00A509D0 /* redaaDic in Frameworks */ = {isa = PBXBuildFile; productRef = AFD5E6512D71E9AA00A509D0 /* redaaDic */; };
 		AFD6911D2D61FF9D001F8C04 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = AFD6911C2D61FF9D001F8C04 /* ZIPFoundation */; };
 		AFD6913A2D63BD26001F8C04 /* LazyPager in Frameworks */ = {isa = PBXBuildFile; productRef = AFD691392D63BD26001F8C04 /* LazyPager */; };
 		AFD691942D676713001F8C04 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = AFD691932D67670F001F8C04 /* .gitignore */; };
@@ -84,7 +83,6 @@
 				AF33494C2D5C7413001EE9C6 /* Apollo in Frameworks */,
 				AF3349512D5C7545001EE9C6 /* ApolloSQLite in Frameworks */,
 				AF3349862D5C892B001EE9C6 /* Anilist in Frameworks */,
-				AFD5E6522D71E9AA00A509D0 /* redaaDic in Frameworks */,
 				AFD6913A2D63BD26001F8C04 /* LazyPager in Frameworks */,
 				AFD6911D2D61FF9D001F8C04 /* ZIPFoundation in Frameworks */,
 			);
@@ -164,7 +162,6 @@
 				AF3349882D5C895F001EE9C6 /* Anilist */,
 				AFD6911C2D61FF9D001F8C04 /* ZIPFoundation */,
 				AFD691392D63BD26001F8C04 /* LazyPager */,
-				AFD5E6512D71E9AA00A509D0 /* redaaDic */,
 			);
 			productName = redaa;
 			productReference = AF3349062D5C5BB6001EE9C6 /* redaa.app */;
@@ -253,7 +250,6 @@
 				AF3349872D5C895F001EE9C6 /* XCLocalSwiftPackageReference "Anilist" */,
 				AFD6911B2D61FF9D001F8C04 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				AFD691382D63BD26001F8C04 /* XCRemoteSwiftPackageReference "LazyPager" */,
-				AFD5E6502D71E9AA00A509D0 /* XCRemoteSwiftPackageReference "redaaDic" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AF3349072D5C5BB6001EE9C6 /* Products */;
@@ -673,14 +669,6 @@
 				version = 1.17.0;
 			};
 		};
-		AFD5E6502D71E9AA00A509D0 /* XCRemoteSwiftPackageReference "redaaDic" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/21repierre/redaaDic";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
 		AFD6911B2D61FF9D001F8C04 /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
@@ -722,11 +710,6 @@
 		AF3349882D5C895F001EE9C6 /* Anilist */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Anilist;
-		};
-		AFD5E6512D71E9AA00A509D0 /* redaaDic */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AFD5E6502D71E9AA00A509D0 /* XCRemoteSwiftPackageReference "redaaDic" */;
-			productName = redaaDic;
 		};
 		AFD6911C2D61FF9D001F8C04 /* ZIPFoundation */ = {
 			isa = XCSwiftPackageProductDependency;
