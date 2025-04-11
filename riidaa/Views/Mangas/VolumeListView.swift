@@ -26,7 +26,7 @@ struct VolumeListView: View {
     var body: some View {
         ScrollView {
             // TODO: word tracker
-            ForEach(manga.volumes.array as! [MangaVolumeModel]) { volume in
+            ForEach((manga.volumes.array as! [MangaVolumeModel]).sorted()) { volume in
                 VolumeComponent(volume: volume)
             }
         }
@@ -177,7 +177,7 @@ extension VolumeListView {
                 }
                 
                 
-                manga.insertIntoVolumes(newVolume, at: Int(volumeNumber)-1)
+                manga.addToVolumes(newVolume)
                 
                 self.processingMessage = "Volume processed."
             } catch {

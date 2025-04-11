@@ -161,7 +161,9 @@ class SQLiteManager {
         )
         do {
             for row in try db!.prepare(query) {
-                let definitionTags = row[self.definitionTags].components(separatedBy: " ")
+                let definitionTags = row[self.definitionTags].components(separatedBy: " ").map{
+                    $0.replacingOccurrences(of: "\u{a0}", with: " ")
+                }
                 let termTags = row[self.termTags].components(separatedBy: " ")
                 let wordTypesArray = row[self.wordTypes].components(separatedBy: " ").compactMap({ s in
                     WordType(rawValue: s)

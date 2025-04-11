@@ -63,7 +63,7 @@ struct DictionariesView: View {
                     case .STARTED:
                         CircularProgressView(progress: self.processingProgress, progressMax: self.processingProgressMax)
                             .frame(width: 150, height: 150)
-                        Text("\(processingProgress) / \(processingProgressMax)")
+//                        Text("\(processingProgress) / \(processingProgressMax)")
                         
                     case .FINISHED:
                         Image(systemName: "checkmark")

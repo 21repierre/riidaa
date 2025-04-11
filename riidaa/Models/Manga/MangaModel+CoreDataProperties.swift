@@ -115,6 +115,7 @@ extension CoreDataManager {
         manga.id = 2
         manga.title = "This is another manga with a long title"
         manga.insertIntoVolumes(CoreDataManager.sampleVolume, at: 0)
+        manga.insertIntoVolumes(CoreDataManager.sampleVolume, at: 1)
         
         return manga
     }

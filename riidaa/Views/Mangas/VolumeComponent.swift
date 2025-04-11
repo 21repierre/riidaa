@@ -47,7 +47,8 @@ struct VolumeComponent: View {
             .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
-        .padding()
+        .padding(.horizontal)
+        .padding(.vertical, 5)
     }
 }
 //

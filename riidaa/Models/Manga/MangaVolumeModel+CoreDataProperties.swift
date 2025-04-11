@@ -64,7 +64,11 @@ extension MangaVolumeModel {
     
 }
 
-extension MangaVolumeModel : Identifiable {
+extension MangaVolumeModel : Identifiable, Comparable {
+    public static func < (lhs: MangaVolumeModel, rhs: MangaVolumeModel) -> Bool {
+        return lhs.number < rhs.number
+    }
+    
 
 }
 

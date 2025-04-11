@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "AF3349052D5C5BB6001EE9C6"
-               BuildableName = "&#x30ea;&#x30fc;&#x30bf;&#x3099;&#x30fc;.app"
+               BuildableName = "riidaa.app"
                BlueprintName = "riidaa"
                ReferencedContainer = "container:riidaa.xcodeproj">
             </BuildableReference>
@@ -69,14 +69,14 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AF3349052D5C5BB6001EE9C6"
-            BuildableName = "&#x30ea;&#x30fc;&#x30bf;&#x3099;&#x30fc;.app"
+            BuildableName = "riidaa.app"
             BlueprintName = "riidaa"
             ReferencedContainer = "container:riidaa.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
    <ProfileAction
-      buildConfiguration = "Release"
+      buildConfiguration = "Debug"
       shouldUseLaunchSchemeArgsEnv = "YES"
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
@@ -86,7 +86,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AF3349052D5C5BB6001EE9C6"
-            BuildableName = "&#x30ea;&#x30fc;&#x30bf;&#x3099;&#x30fc;.app"
+            BuildableName = "riidaa.app"
             BlueprintName = "riidaa"
             ReferencedContainer = "container:riidaa.xcodeproj">
          </BuildableReference>

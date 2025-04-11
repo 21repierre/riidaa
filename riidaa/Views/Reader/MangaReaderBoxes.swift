@@ -14,7 +14,7 @@ struct MangaReaderBoxes: View {
     var offsetX: Double
     var offsetY: Double
     
-    @Binding var currentLine: String
+    @Binding var currentLine: String?
     
     var body: some View {
         ForEach(boxes, id: \.self) { box in
