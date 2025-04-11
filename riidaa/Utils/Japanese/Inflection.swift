@@ -8,9 +8,15 @@
 public enum WordType: String, Sendable, CaseIterable {
     case v
     case v1
+    case v1d
+    case v1p
+    
     case v5
     case v5d
-    case v1d
+    case v5s
+    case v5ss
+    case v5sp
+    
     case vs
     case vk
     case vz
@@ -22,15 +28,17 @@ public enum WordType: String, Sendable, CaseIterable {
     case nasai_form
     case ta_form
     case masen_form
+    case ku_form
     
     static let childrenMap: [WordType: [WordType]] = [
-        .v: [v1, v5, vs, vk],
-        .v1: [v1d],
-        .v5: [v5d]
+        .v: [.v1, .v5, .vs, .vk, .vz],
+        .v1: [.v1d, .v1p],
+        .v5: [.v5d, .v5s],
+        .v5s: [.v5ss, .v5sp],
     ]
     
     public var children: [WordType] {
-        return WordType.childrenMap[self] ?? []
+        return (WordType.childrenMap[self] ?? []).flatMap { $0.children }
     }
     
     public static func fromString(s: String) -> WordType? {
@@ -43,7 +51,7 @@ public enum InflectionRule: String, Sendable, Identifiable {
     
     case masu = "ーます"
     case te = "ーて"
-    case teiru = "ーいる"
+    case iru = "ーいる"
     case ba = "ーば"
     case ya = "ーゃ"
     case cha = "ーちゃ"
@@ -55,7 +63,43 @@ public enum InflectionRule: String, Sendable, Identifiable {
     case sugiru = "ーすぎる"
     case ta = "ーた"
     case negative = "negative"
-    
+    case causative = "causative"
+    case short_causative = "short causative"
+    case tai = "ーたい"
+    case tara = "ーたら"
+    case tari = "ーたり"
+    case zu = "ーず" //
+    case nu = "ーぬ" //
+    case n = "ーん" //
+    case nbakari = "ーんばかり" //
+    case ntosuru = "ーんとする" //
+    case mu = "ーむ" //
+    case zaru = "ーざる" //
+    case neba = "ーねば" //
+    case ku = "ーく"
+    case imperative = "imperative" //
+    case continuative = "continuative" //
+    case sa = "ーさ" //
+    case passive = "passive" //
+    case potential = "potential" //
+    case potential_passive = "potential or passive" //
+    case volitional = "volitional" //
+    case volitional_slang = "volitional slang" //
+    case mai = "ーまい" //
+    case oku = "ーおく" //
+    case ki = "ーき" //
+    case ge = "ーげ" //
+    case garu = "ーがる" //
+    case e = "ーえ" //
+    case n_slang = "ーんな" //
+    case imperative_negative_slang = "imperative negative slang" //
+    case kansai_negative = "関西弁 negative" //
+    case kansai_te = "関西弁　ーて" //
+    case kansai_ta = "関西弁　ーた" //
+    case kansai_tara = "関西弁　ーたら" //
+    case kansai_tari = "関西弁　ーたり" //
+    case kansai_adj_te = "関西弁 adjective ーて" //
+    case kansai_adj_negative = "関西弁 adjective negative" //
     
 }
 
@@ -135,7 +179,7 @@ public struct Inflection : Sendable {
             Inflection(base: "たまう", inflection: "たもうて", baseTypes: [WordType.v5], inflectedTypes: [WordType.te_form]),
             Inflection(base: "たゆたう", inflection: "たゆとうて", baseTypes: [WordType.v5], inflectedTypes: [WordType.te_form]),
         ],
-        .teiru: [
+        .iru: [
             Inflection(base: "て", inflection: "ている", baseTypes: [WordType.te_form], inflectedTypes: [WordType.v1d]),
             Inflection(base: "て", inflection: "てる", baseTypes: [WordType.te_form], inflectedTypes: [WordType.v1d]),
             
@@ -186,26 +230,25 @@ public struct Inflection : Sendable {
             Inflection(base: "来る", inflection: "来ちゃ", baseTypes: [WordType.v5], inflectedTypes: [WordType.vk]),
             Inflection(base: "來る", inflection: "來ちゃ", baseTypes: [WordType.v5], inflectedTypes: [WordType.vk]),
         ],
-        
-            .chau: [
-                Inflection(base: "る", inflection: "ちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
-                Inflection(base: "ぐ", inflection: "いじゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
-                Inflection(base: "く", inflection: "いちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
-                Inflection(base: "す", inflection: "しちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
-                Inflection(base: "う", inflection: "っちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
-                Inflection(base: "く", inflection: "っちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
-                Inflection(base: "つ", inflection: "っちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
-                Inflection(base: "る", inflection: "っちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
-                Inflection(base: "ぬ", inflection: "んじゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
-                Inflection(base: "ぶ", inflection: "んじゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
-                Inflection(base: "む", inflection: "んじゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
-                Inflection(base: "ずる", inflection: "じちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vz]),
-                Inflection(base: "する", inflection: "しちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vs]),
-                Inflection(base: "為る", inflection: "為ちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vs]),
-                Inflection(base: "くる", inflection: "きちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vk]),
-                Inflection(base: "来る", inflection: "来ちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vk]),
-                Inflection(base: "來る", inflection: "來ちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vk]),
-            ],
+        .chau: [
+            Inflection(base: "る", inflection: "ちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "ぐ", inflection: "いじゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
+            Inflection(base: "く", inflection: "いちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
+            Inflection(base: "す", inflection: "しちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
+            Inflection(base: "う", inflection: "っちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
+            Inflection(base: "く", inflection: "っちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
+            Inflection(base: "つ", inflection: "っちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
+            Inflection(base: "る", inflection: "っちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
+            Inflection(base: "ぬ", inflection: "んじゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
+            Inflection(base: "ぶ", inflection: "んじゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
+            Inflection(base: "む", inflection: "んじゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
+            Inflection(base: "ずる", inflection: "じちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vz]),
+            Inflection(base: "する", inflection: "しちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vs]),
+            Inflection(base: "為る", inflection: "為ちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vs]),
+            Inflection(base: "くる", inflection: "きちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vk]),
+            Inflection(base: "来る", inflection: "来ちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vk]),
+            Inflection(base: "來る", inflection: "來ちゃう", baseTypes: [WordType.v5], inflectedTypes: [WordType.vk]),
+        ],
         .chimau: [
             Inflection(base: "る", inflection: "ちまう", baseTypes: [WordType.v1], inflectedTypes: [WordType.v5]),
             Inflection(base: "ぐ", inflection: "いじまう", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5]),
@@ -280,6 +323,24 @@ public struct Inflection : Sendable {
             Inflection(base: "くる", inflection: "きすぎる", baseTypes: [WordType.vk], inflectedTypes: [WordType.v1]),
             Inflection(base: "来る", inflection: "来すぎる", baseTypes: [WordType.vk], inflectedTypes: [WordType.v1]),
             Inflection(base: "來る", inflection: "來すぎる", baseTypes: [WordType.vk], inflectedTypes: [WordType.v1]),
+            
+            Inflection(base: "い", inflection: "過ぎる", baseTypes: [WordType.adj_i], inflectedTypes: [WordType.v1]),
+            Inflection(base: "る", inflection: "過ぎる", baseTypes: [WordType.v1], inflectedTypes: [WordType.v1]),
+            Inflection(base: "う", inflection: "い過ぎる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "つ", inflection: "ち過ぎる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "る", inflection: "り過ぎる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "ぬ", inflection: "に過ぎる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "ぶ", inflection: "び過ぎる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "む", inflection: "み過ぎる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "く", inflection: "き過ぎる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "ぐ", inflection: "ぎ過ぎる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "す", inflection: "し過ぎる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "ずる", inflection: "じ過ぎる", baseTypes: [WordType.vz], inflectedTypes: [WordType.v1]),
+            Inflection(base: "する", inflection: "し過ぎる", baseTypes: [WordType.vs], inflectedTypes: [WordType.v1]),
+            Inflection(base: "為る", inflection: "為過ぎる", baseTypes: [WordType.vs], inflectedTypes: [WordType.v1]),
+            Inflection(base: "くる", inflection: "き過ぎる", baseTypes: [WordType.vk], inflectedTypes: [WordType.v1]),
+            Inflection(base: "来る", inflection: "来過ぎる", baseTypes: [WordType.vk], inflectedTypes: [WordType.v1]),
+            Inflection(base: "來る", inflection: "來過ぎる", baseTypes: [WordType.vk], inflectedTypes: [WordType.v1]),
         ],
         .ta: [
             Inflection(base: "い", inflection: "かった", baseTypes: [WordType.adj_i], inflectedTypes: [WordType.ta_form]),
@@ -323,10 +384,11 @@ public struct Inflection : Sendable {
             Inflection(base: "たゆたう", inflection: "たゆとうた", baseTypes: [WordType.v5], inflectedTypes: [WordType.ta_form]),
         ],
         .negative: [
-            Inflection(base: "い", inflection: "ない", baseTypes: [WordType.adj_i], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "い", inflection: "くない", baseTypes: [WordType.adj_i], inflectedTypes: [WordType.adj_i]),
             Inflection(base: "る", inflection: "ない", baseTypes: [WordType.v1], inflectedTypes: [WordType.adj_i]),
             Inflection(base: "う", inflection: "わない", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
             Inflection(base: "く", inflection: "かない", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "ぐ", inflection: "がない", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
             Inflection(base: "す", inflection: "さない", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
             Inflection(base: "つ", inflection: "たない", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
             Inflection(base: "ぬ", inflection: "なない", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
@@ -341,6 +403,152 @@ public struct Inflection : Sendable {
             Inflection(base: "來る", inflection: "來ない", baseTypes: [WordType.vk], inflectedTypes: [WordType.adj_i]),
             Inflection(base: "ます", inflection: "ません", baseTypes: [WordType.masu_form], inflectedTypes: [WordType.masen_form]),
         ],
+        .tai: [
+            Inflection(base: "る", inflection: "たい", baseTypes: [WordType.v1], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "う", inflection: "いたい", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "く", inflection: "きたい", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "ぐ", inflection: "ぎたい", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "す", inflection: "したい", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "つ", inflection: "ちたい", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "ぬ", inflection: "にたい", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "ぶ", inflection: "びたい", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "む", inflection: "みたい", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "る", inflection: "りたい", baseTypes: [WordType.v5], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "ずる", inflection: "じたい", baseTypes: [WordType.vz], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "する", inflection: "したい", baseTypes: [WordType.vs], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "為る", inflection: "為たい", baseTypes: [WordType.vs], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "くる", inflection: "こたい", baseTypes: [WordType.vk], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "来る", inflection: "来たい", baseTypes: [WordType.vk], inflectedTypes: [WordType.adj_i]),
+            Inflection(base: "來る", inflection: "來たい", baseTypes: [WordType.vk], inflectedTypes: [WordType.adj_i]),
+        ],
+        .tara: [
+            Inflection(base: "い", inflection: "かったら", baseTypes: [WordType.adj_i], inflectedTypes: []),
+            Inflection(base: "る", inflection: "たら", baseTypes: [WordType.v1], inflectedTypes: []),
+            Inflection(base: "う", inflection: "いたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "つ", inflection: "ちたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "る", inflection: "りたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "ぬ", inflection: "にたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "ぶ", inflection: "びたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "む", inflection: "みたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "く", inflection: "きたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "ぐ", inflection: "ぎたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "す", inflection: "したら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "ずる", inflection: "じたら", baseTypes: [WordType.vz], inflectedTypes: []),
+            Inflection(base: "する", inflection: "したら", baseTypes: [WordType.vs], inflectedTypes: []),
+            Inflection(base: "為る", inflection: "為たら", baseTypes: [WordType.vs], inflectedTypes: []),
+            Inflection(base: "くる", inflection: "きたら", baseTypes: [WordType.vk], inflectedTypes: []),
+            Inflection(base: "来る", inflection: "来たら", baseTypes: [WordType.vk], inflectedTypes: []),
+            Inflection(base: "來る", inflection: "來たら", baseTypes: [WordType.vk], inflectedTypes: []),
+            Inflection(base: "ます", inflection: "ましたら", baseTypes: [WordType.masu_form], inflectedTypes: []),
+            
+            Inflection(base: "いく", inflection: "いったら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "行く", inflection: "行ったら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "逝く", inflection: "逝ったら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "往く", inflection: "往ったら", baseTypes: [WordType.v5], inflectedTypes: []),
+            
+            Inflection(base: "こう", inflection: "こうたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "とう", inflection: "とうたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "請う", inflection: "請うたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "乞う", inflection: "乞うたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "恋う", inflection: "恋うたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "問う", inflection: "問うたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "訪う", inflection: "訪うたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "宣う", inflection: "宣うたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "曰う", inflection: "曰うたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "給う", inflection: "給うたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "賜う", inflection: "賜うたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "揺蕩う", inflection: "揺蕩うたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            
+            Inflection(base: "のたまう", inflection: "のたもうたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "たまう", inflection: "たもうたら", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "たゆたう", inflection: "たゆとうたら", baseTypes: [WordType.v5], inflectedTypes: []),
+        ],
+        .tari: [
+            Inflection(base: "い", inflection: "かったり", baseTypes: [WordType.adj_i], inflectedTypes: []),
+            Inflection(base: "る", inflection: "たり", baseTypes: [WordType.v1], inflectedTypes: []),
+            Inflection(base: "う", inflection: "いたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "つ", inflection: "ちたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "る", inflection: "りたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "ぬ", inflection: "にたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "ぶ", inflection: "びたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "む", inflection: "みたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "く", inflection: "きたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "ぐ", inflection: "ぎたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "す", inflection: "したり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "ずる", inflection: "じたり", baseTypes: [WordType.vz], inflectedTypes: []),
+            Inflection(base: "する", inflection: "したり", baseTypes: [WordType.vs], inflectedTypes: []),
+            Inflection(base: "為る", inflection: "為たり", baseTypes: [WordType.vs], inflectedTypes: []),
+            Inflection(base: "くる", inflection: "きたり", baseTypes: [WordType.vk], inflectedTypes: []),
+            Inflection(base: "来る", inflection: "来たり", baseTypes: [WordType.vk], inflectedTypes: []),
+            Inflection(base: "來る", inflection: "來たり", baseTypes: [WordType.vk], inflectedTypes: []),
+            
+            Inflection(base: "いく", inflection: "いったり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "行く", inflection: "行ったり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "逝く", inflection: "逝ったり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "往く", inflection: "往ったり", baseTypes: [WordType.v5], inflectedTypes: []),
+            
+            Inflection(base: "こう", inflection: "こうたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "とう", inflection: "とうたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "請う", inflection: "請うたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "乞う", inflection: "乞うたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "恋う", inflection: "恋うたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "問う", inflection: "問うたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "訪う", inflection: "訪うたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "宣う", inflection: "宣うたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "曰う", inflection: "曰うたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "給う", inflection: "給うたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "賜う", inflection: "賜うたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "揺蕩う", inflection: "揺蕩うたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            
+            Inflection(base: "のたまう", inflection: "のたもうたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "たまう", inflection: "たもうたり", baseTypes: [WordType.v5], inflectedTypes: []),
+            Inflection(base: "たゆたう", inflection: "たゆとうたり", baseTypes: [WordType.v5], inflectedTypes: []),
+        ],
+        .causative: [
+            Inflection(base: "る", inflection: "させる", baseTypes: [WordType.v1], inflectedTypes: [WordType.v1]),
+            Inflection(base: "う", inflection: "あせる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "つ", inflection: "たせる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "る", inflection: "らせる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "ぬ", inflection: "なせる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "ぶ", inflection: "ばせる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "む", inflection: "ませる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "く", inflection: "かせる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "ぐ", inflection: "がせる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            Inflection(base: "す", inflection: "させる", baseTypes: [WordType.v5], inflectedTypes: [WordType.v1]),
+            
+            Inflection(base: "ずる", inflection: "じさせる", baseTypes: [WordType.vz], inflectedTypes: [WordType.v1]),
+            Inflection(base: "ずる", inflection: "ぜさせる", baseTypes: [WordType.vz], inflectedTypes: [WordType.v1]),
+            Inflection(base: "する", inflection: "させる", baseTypes: [WordType.vs], inflectedTypes: [WordType.v1]),
+            Inflection(base: "する", inflection: "せさせる", baseTypes: [WordType.vs], inflectedTypes: [WordType.v1]),
+            Inflection(base: "為る", inflection: "為せる", baseTypes: [WordType.vs], inflectedTypes: [WordType.v1]),
+            Inflection(base: "為る", inflection: "為させる", baseTypes: [WordType.vs], inflectedTypes: [WordType.v1]),
+            Inflection(base: "くる", inflection: "こさせる", baseTypes: [WordType.vk], inflectedTypes: [WordType.v1]),
+            Inflection(base: "来る", inflection: "来させる", baseTypes: [WordType.vk], inflectedTypes: [WordType.v1]),
+            Inflection(base: "來る", inflection: "來させる", baseTypes: [WordType.vk], inflectedTypes: [WordType.v1]),
+        ],
+        .short_causative: [
+            Inflection(base: "る", inflection: "さす", baseTypes: [WordType.v1], inflectedTypes: [WordType.v5ss]),
+            Inflection(base: "う", inflection: "わす", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5sp]),
+            Inflection(base: "つ", inflection: "たす", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5sp]),
+            Inflection(base: "る", inflection: "らす", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5sp]),
+            Inflection(base: "ぬ", inflection: "なす", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5sp]),
+            Inflection(base: "ぶ", inflection: "ばす", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5sp]),
+            Inflection(base: "む", inflection: "ます", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5sp]),
+            Inflection(base: "く", inflection: "かす", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5sp]),
+            Inflection(base: "ぐ", inflection: "がす", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5sp]),
+            Inflection(base: "す", inflection: "さす", baseTypes: [WordType.v5], inflectedTypes: [WordType.v5ss]),
+            
+            Inflection(base: "ずる", inflection: "じさす", baseTypes: [WordType.vz], inflectedTypes: [WordType.v5ss]),
+            Inflection(base: "ずる", inflection: "ぜさす", baseTypes: [WordType.vz], inflectedTypes: [WordType.v5ss]),
+            Inflection(base: "する", inflection: "さす", baseTypes: [WordType.vs], inflectedTypes: [WordType.v5ss]),
+            Inflection(base: "為る", inflection: "為す", baseTypes: [WordType.vs], inflectedTypes: [WordType.v5ss]),
+            Inflection(base: "くる", inflection: "こさす", baseTypes: [WordType.vk], inflectedTypes: [WordType.v5ss]),
+            Inflection(base: "来る", inflection: "来さす", baseTypes: [WordType.vk], inflectedTypes: [WordType.v5ss]),
+            Inflection(base: "來る", inflection: "來さす", baseTypes: [WordType.vk], inflectedTypes: [WordType.v5ss]),
+        ],
+        .ku: [
+            Inflection(base: "い", inflection: "く", baseTypes: [.adj_i], inflectedTypes: [.ku_form])
+        ]
         
     ]
     

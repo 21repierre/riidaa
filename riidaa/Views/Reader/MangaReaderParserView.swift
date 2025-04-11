@@ -123,7 +123,7 @@ extension MangaReaderParserView {
                         dictionary: DictionaryDB(id: 1, revision: "", title: "Jitandex", format: 3)
                     ),
                     deinflection: Deinflection(text: "思っている", inflections: [
-                        InflectionRule.teiru, InflectionRule.te
+                        InflectionRule.iru, InflectionRule.te
                     ], types: []))
             ]),
             ParsingResult(original: "のか", results: [
