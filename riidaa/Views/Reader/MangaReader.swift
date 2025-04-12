@@ -16,7 +16,12 @@ public struct MangaReader: View {
     @State private var pages: [MangaPageModel] = []
     @State private var currentLine: String? = nil
     
-    @State private var offset: CGFloat = 0
+    @State private var pageZoom: CGFloat = 1.0
+    @State private var pageLastZoom: CGFloat = 1.0
+    @State private var pageOffset: CGSize = .zero
+    @State private var pageInitialOffset: CGSize = .zero
+    
+    @State private var parserOffset: CGFloat = 0
     @GestureState private var dragOffset: CGFloat = 0
     @State private var pageHeight = 0.0
     
@@ -36,7 +41,6 @@ public struct MangaReader: View {
             ZStack(alignment: .bottom) {
                 TabView(selection: $currentPage) {
                     ForEach(pages.indices, id: \.self) { index in
-                        //                        VStack {
                         GeometryReader { geometry in
                             let scale = min(geometry.size.width / Double(pages[index].width),
                                             geometry.size.height / Double(pages[index].height))
@@ -62,11 +66,40 @@ public struct MangaReader: View {
                                 MangaReaderBoxes(boxes: pages[index].getBoxes(), scale: scale, offsetX: offsetX, offsetY: offsetY, currentLine: $currentLine)
                             }
                             .frame(maxWidth: .infinity, alignment: .top)
+                            .scaleEffect(pageZoom)
+                            .offset(pageOffset)
                             .onAppear {
                                 pageHeight = Double(pages[index].height) * scale
                             }
+                            .gesture(
+                                SimultaneousGesture(
+                                    DragGesture()
+                                        .onChanged { gesture in
+                                            pageOffset = CGSize(
+                                                width: pageInitialOffset.width + gesture.translation.width,
+                                                height: pageInitialOffset.height + gesture.translation.height
+                                            )
+                                        }
+                                        .onEnded { _ in
+                                            pageInitialOffset = pageOffset
+                                        },
+                                    MagnificationGesture()
+                                        .onChanged { value in
+                                            pageZoom = max(0.5, pageLastZoom * value)
+                                        }
+                                        .onEnded { _ in
+                                            if pageZoom <= 1.0 {
+                                                withAnimation(.easeInOut(duration: 0.5)) {
+                                                    pageInitialOffset = .zero
+                                                    pageOffset = .zero
+                                                }
+                                            }
+                                            pageZoom = max(1.0, pageZoom)
+                                            pageLastZoom = pageZoom
+                                        }
+                                )
+                            )
                         }
-                        //                        }
                     }
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
@@ -89,7 +122,7 @@ public struct MangaReader: View {
                     MangaReaderParserView(line: currentLine ?? "")
                         .frame(maxWidth: .infinity)
                 }
-                .frame(height: max(min(minHeight + offset-dragOffset, maxHeight), minHeight), alignment: .top)
+                .frame(height: max(min(minHeight + parserOffset-dragOffset, maxHeight), minHeight), alignment: .top)
                 .background(Color(.systemGray6))
                 .roundedCorners(20, corners: [.topLeft, .topRight])
                 .gesture(
@@ -98,22 +131,24 @@ public struct MangaReader: View {
                             state = value.translation.height
                         }
                         .onEnded { value in
-                            if minHeight + offset-value.translation.height > tHeight2 {
-                                offset = maxHeight - minHeight
-                            } else if minHeight + offset-value.translation.height < tHeight1 || value.translation.height > 0 {
-                                offset = 0
+                            if minHeight + parserOffset-value.translation.height > tHeight2 {
+                                parserOffset = maxHeight - minHeight
+                            } else if minHeight + parserOffset-value.translation.height < tHeight1 || value.translation.height > 0 {
+                                parserOffset = 0
                             } else {
-                                offset = maxHeight - minHeight
+                                parserOffset = maxHeight - minHeight
                             }
                         }
                 )
-                .animation(.easeIn(duration: 0.15), value: offset)
+                .animation(.easeIn(duration: 0.15), value: parserOffset)
             }
         }
         .navigationTitle("\(currentPage + 1)/\(volume.pages.count)")
         .navigationBarTitleDisplayMode(.inline)
     }
+    
 }
+
 
 #Preview {
     MangaReader(volume: .init(get: {

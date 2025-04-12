@@ -19,7 +19,7 @@ struct MangaReaderBoxes: View {
     var body: some View {
         ForEach(boxes, id: \.self) { box in
             Rectangle()
-                .fill(Color.red.opacity(0.3))
+                .fill(Color.red.opacity(0.25))
                 .border(Color.red, width: 1)
                 .rotationEffect(Angle(degrees: box.rotation))
                 .frame(

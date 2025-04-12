@@ -16,7 +16,14 @@ struct MangaReaderParserView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if loading {
+            if line == "" {
+                Spacer()
+                Text("Select a text box")
+                    .font(.title2)
+                    .italic()
+                    .foregroundStyle(.secondary)
+                Spacer()
+            } else if loading {
                 ProgressView()
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -80,8 +87,9 @@ extension MangaReaderParserView {
             self.loading = true
             let results = Parser.parse(text: line)
             if results.count > 0 {
-                selectedElement = nil
-                parsedText = results
+//                selectedElement = nil
+                self.parsedText = results
+                self.selectedElement = 0
             }
             self.loading = false
         }
@@ -91,7 +99,8 @@ extension MangaReaderParserView {
 
 #Preview {
     MangaReaderParserView(
-        line: "君は学校を何だと思っているのかね",
+        line: "",
+//        line: "君は学校を何だと思っているのかね",
         parsedText: [
             ParsingResult(original: "君", results: [
                 TermDeinflection(term: TermDB(term: "君", reading: "きみ", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflection: Deinflection(text: "君", inflections: [], types: []))
