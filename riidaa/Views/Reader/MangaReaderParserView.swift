@@ -56,7 +56,7 @@ struct MangaReaderParserView: View {
                 Spacer()
             }
         }
-        .padding()
+        .padding([.leading, .trailing])
         .onChange(of: line) { newLine in
             if newLine == "" {
                 self.selectedElement = nil

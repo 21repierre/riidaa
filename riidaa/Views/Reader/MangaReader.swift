@@ -13,12 +13,12 @@ public struct MangaReader: View {
     @Binding var volume: MangaVolumeModel
     @State var currentPage: Int
     
-    @State private var pages: [MangaPageModel] = [] // Store computed array
+    @State private var pages: [MangaPageModel] = []
     @State private var currentLine: String? = nil
     
-    @State private var parserHeight: CGFloat = 100
-    private let expandedHeight: CGFloat = 400
-    private let collapsedHeight: CGFloat = 100
+    @State private var offset: CGFloat = 0
+    @GestureState private var dragOffset: CGFloat = 0
+    @State private var pageHeight = 0.0
     
     public init(volume: Binding<MangaVolumeModel>, currentPage: Int) {
         self._volume = volume
@@ -27,10 +27,16 @@ public struct MangaReader: View {
     }
     
     public var body: some View {
-        ZStack(alignment: .bottom) {
-            TabView(selection: $currentPage) {
-                ForEach(pages.indices, id: \.self) { index in
-                    VStack {
+        GeometryReader { mainGeom in
+            let minHeight = min(mainGeom.size.height * 0.2, mainGeom.size.height - pageHeight)
+            let maxHeight = mainGeom.size.height * 0.8
+            let tHeight1 = (maxHeight + minHeight)/3
+            let tHeight2 = 2 * tHeight1
+            
+            ZStack(alignment: .bottom) {
+                TabView(selection: $currentPage) {
+                    ForEach(pages.indices, id: \.self) { index in
+                        //                        VStack {
                         GeometryReader { geometry in
                             let scale = min(geometry.size.width / Double(pages[index].width),
                                             geometry.size.height / Double(pages[index].height))
@@ -55,63 +61,63 @@ public struct MangaReader: View {
                                 }
                                 MangaReaderBoxes(boxes: pages[index].getBoxes(), scale: scale, offsetX: offsetX, offsetY: offsetY, currentLine: $currentLine)
                             }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .frame(maxWidth: .infinity, alignment: .top)
+                            .onAppear {
+                                pageHeight = Double(pages[index].height) * scale
+                            }
                         }
+                        //                        }
                     }
                 }
-            }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-            .padding(.bottom, collapsedHeight)
-            .onChange(of: currentPage) { newPage in
-                self.currentLine = nil
-                volume.lastReadPage = Int64(newPage)
-                DispatchQueue.main.async {
-                    CoreDataManager.shared.saveContext()
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                .onChange(of: currentPage) { newPage in
+                    self.currentLine = nil
+                    volume.lastReadPage = Int64(newPage)
+                    DispatchQueue.main.async {
+                        CoreDataManager.shared.saveContext()
+                    }
                 }
+                
+                VStack(alignment: .center, spacing: 0) {
+                    Capsule()
+                        .frame(width: 50, height: 6)
+                        .foregroundColor(.gray)
+                        .padding(.top, 5)
+                        .padding(.bottom, 5)
+                    
+                    // Text("\(minHeight + offset-dragOffset) \(tHeight1) \(tHeight2) \(dragOffset)")
+                    MangaReaderParserView(line: currentLine ?? "")
+                        .frame(maxWidth: .infinity)
+                }
+                .frame(height: max(min(minHeight + offset-dragOffset, maxHeight), minHeight), alignment: .top)
+                .background(Color(.systemGray6))
+                .roundedCorners(20, corners: [.topLeft, .topRight])
+                .gesture(
+                    DragGesture(coordinateSpace: .global)
+                        .updating($dragOffset) { value, state, tr in
+                            state = value.translation.height
+                        }
+                        .onEnded { value in
+                            if minHeight + offset-value.translation.height > tHeight2 {
+                                offset = maxHeight - minHeight
+                            } else if minHeight + offset-value.translation.height < tHeight1 || value.translation.height > 0 {
+                                offset = 0
+                            } else {
+                                offset = maxHeight - minHeight
+                            }
+                        }
+                )
+                .animation(.easeIn(duration: 0.15), value: offset)
             }
-            //            .onChange(of: currentLine) { newLine in
-            //                print(newLine)
-            //            }
-            .sheet(item: $currentLine) { line in
-                //                Text("caca")
-                MangaReaderParserView(line: line)
-                    .presentationDetents([.fraction(0.2), .fraction(0.8), .large])
-            }
-            //            GeometryReader { geometry in
-            //                VStack {
-            //                    Capsule()
-            //                        .frame(width: 50, height: 6)
-            //                        .foregroundColor(.gray)
-            //                        .padding(.top, 8)
-            //
-            //                    MangaReaderParserView(line: currentLine)
-            //                        .frame(maxWidth: .infinity)
-            //                        .frame(height: parserHeight - 20)
-            //                }
-            //                .background(Color(.systemBackground))
-            //                .roundedCorners(16, corners: [.topLeft, .topRight])
-            //                .frame(maxHeight: parserHeight)
-            //                .offset(y: expandedHeight - parserHeight)
-            //                .gesture(
-            //                    DragGesture()
-            //                        .onChanged { value in
-            //                            let newHeight = parserHeight - value.translation.height
-            //                            parserHeight = min(max(newHeight, collapsedHeight), expandedHeight)
-            //                        }
-//                        .onEnded { _ in
-//                            withAnimation {
-//                                parserHeight = (parserHeight > (collapsedHeight + expandedHeight) / 2) ? expandedHeight : collapsedHeight
-//                            }
-//                        }
-//                )
-//            }
-//            .frame(height: expandedHeight)
         }
         .navigationTitle("\(currentPage + 1)/\(volume.pages.count)")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
 
-//#Preview {
-//    MangaReader()
-//}
+#Preview {
+    MangaReader(volume: .init(get: {
+        CoreDataManager.sampleVolume
+    }, set: { _ in }), currentPage: 0)
+    .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
+}
