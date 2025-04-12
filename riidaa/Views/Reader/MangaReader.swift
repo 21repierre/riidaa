@@ -18,12 +18,49 @@ public struct MangaReader: View {
     
     @State private var pageZoom: CGFloat = 1.0
     @State private var pageLastZoom: CGFloat = 1.0
+    @State private var pageZoomAnchor: UnitPoint = .center
     @State private var pageOffset: CGSize = .zero
     @State private var pageInitialOffset: CGSize = .zero
     
     @State private var parserOffset: CGFloat = 0
     @GestureState private var dragOffset: CGFloat = 0
     @State private var pageHeight = 0.0
+    
+    private var zoomGesture: some Gesture {
+        if #available(iOS 17.0, *) {
+            return MagnifyGesture()
+                .onChanged { state in
+                    pageZoomAnchor = state.startAnchor
+                    pageZoom = max(0.5, pageLastZoom * state.magnification)
+                }
+                .onEnded { _ in
+                    if pageZoom <= 1.0 {
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            pageInitialOffset = .zero
+                            pageOffset = .zero
+                            pageZoomAnchor = .center
+                        }
+                    }
+                    pageZoom = max(1.0, pageZoom)
+                    pageLastZoom = pageZoom
+                }
+        } else {
+            return MagnificationGesture()
+                .onChanged { value in
+                    pageZoom = max(0.5, pageLastZoom * value)
+                }
+                .onEnded { _ in
+                    if pageZoom <= 1.0 {
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            pageInitialOffset = .zero
+                            pageOffset = .zero
+                        }
+                    }
+                    pageZoom = max(1.0, pageZoom)
+                    pageLastZoom = pageZoom
+                }
+        }
+    }
     
     public init(volume: Binding<MangaVolumeModel>, currentPage: Int) {
         self._volume = volume
@@ -66,44 +103,43 @@ public struct MangaReader: View {
                                 MangaReaderBoxes(boxes: pages[index].getBoxes(), scale: scale, offsetX: offsetX, offsetY: offsetY, currentLine: $currentLine)
                             }
                             .frame(maxWidth: .infinity, alignment: .top)
-                            .scaleEffect(pageZoom)
+                            .scaleEffect(pageZoom, anchor: pageZoomAnchor)
                             .offset(pageOffset)
                             .onAppear {
                                 pageHeight = Double(pages[index].height) * scale
                             }
                             .gesture(
-                                SimultaneousGesture(
-                                    DragGesture()
-                                        .onChanged { gesture in
-                                            pageOffset = CGSize(
-                                                width: pageInitialOffset.width + gesture.translation.width,
-                                                height: pageInitialOffset.height + gesture.translation.height
-                                            )
-                                        }
-                                        .onEnded { _ in
-                                            pageInitialOffset = pageOffset
-                                        },
-                                    MagnificationGesture()
-                                        .onChanged { value in
-                                            pageZoom = max(0.5, pageLastZoom * value)
-                                        }
-                                        .onEnded { _ in
-                                            if pageZoom <= 1.0 {
-                                                withAnimation(.easeInOut(duration: 0.5)) {
-                                                    pageInitialOffset = .zero
-                                                    pageOffset = .zero
-                                                }
-                                            }
-                                            pageZoom = max(1.0, pageZoom)
-                                            pageLastZoom = pageZoom
-                                        }
-                                )
-                            )
+                                zoomGesture
+                            ).simultaneousGesture(
+                                DragGesture()
+                                    .onChanged { gesture in
+                                        pageOffset = CGSize(
+                                            width: pageInitialOffset.width + gesture.translation.width,
+                                            height: pageInitialOffset.height + gesture.translation.height
+                                        )
+                                    }
+                                    .onEnded { _ in
+                                        pageInitialOffset = pageOffset
+                                    }, isEnabled: pageZoom > 1)
+                            .onTapGesture(count: 2) {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    pageZoom = 1.0
+                                    pageLastZoom = 1.0
+                                    pageOffset = .zero
+                                    pageInitialOffset = .zero
+                                    pageZoomAnchor = .center
+                                }
+                            }
                         }
                     }
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 .onChange(of: currentPage) { newPage in
+                    pageZoom = 1.0
+                    pageLastZoom = 1.0
+                    pageOffset = .zero
+                    pageInitialOffset = .zero
+                    pageZoomAnchor = .center
                     self.currentLine = nil
                     volume.lastReadPage = Int64(newPage)
                     DispatchQueue.main.async {
