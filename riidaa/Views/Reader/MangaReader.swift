@@ -123,11 +123,17 @@ public struct MangaReader: View {
                                     }, isEnabled: pageZoom > 1)
                             .onTapGesture(count: 2) {
                                 withAnimation(.easeInOut(duration: 0.3)) {
-                                    pageZoom = 1.0
-                                    pageLastZoom = 1.0
-                                    pageOffset = .zero
-                                    pageInitialOffset = .zero
-                                    pageZoomAnchor = .center
+                                    if pageZoom > 1 {
+                                        pageZoom = 1.0
+                                        pageLastZoom = 1.0
+                                        pageOffset = .zero
+                                        pageInitialOffset = .zero
+                                        pageZoomAnchor = .center
+                                    } else {
+                                        pageZoom = 2.0
+                                        pageLastZoom = 2.0
+                                        pageZoomAnchor = .center
+                                    }
                                 }
                             }
                         }

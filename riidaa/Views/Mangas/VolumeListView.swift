@@ -72,7 +72,7 @@ struct VolumeListView: View {
 extension VolumeListView {
     
     func processZipFile(path: URL) {
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.main.async {
             let fileManager = FileManager.default
             let tempDirectory = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             
@@ -120,6 +120,7 @@ extension VolumeListView {
                 
                 let newVolume = MangaVolumeModel(context: moc)
                 newVolume.number = volumeNumber
+                manga.addToVolumes(newVolume)
                 
                 // pages
                 guard let pages = mokuroJson["pages"] as? [[String: Any]] else {
@@ -144,7 +145,7 @@ extension VolumeListView {
                     try fileManager.moveItem(at: img, to: destImg)
                     
                     let newPage = MangaPageModel(context: moc)
-                    newVolume.insertIntoPages(newPage, at: i)
+                    newVolume.addToPages(newPage)
                     newPage.number = Int64(i + 1)
                     newPage.image = img_path
                     
@@ -171,13 +172,15 @@ extension VolumeListView {
                         pageBlock.rotation = rotation ?? 0
                         
                         newPage.addToBoxes(pageBlock)
+                        
+                        if pageBlock.managedObjectContext != newPage.managedObjectContext {
+                            print("gros caca")
+                        }
                     }
 //                    print(newPage.number, newPage.boxes.count)
                     self.processingProgress = i
                 }
                 
-                
-                manga.addToVolumes(newVolume)
                 
                 self.processingMessage = "Volume processed."
             } catch {
@@ -187,7 +190,11 @@ extension VolumeListView {
             
             DispatchQueue.main.async {
                 if self.processingStatus != ProcessingStatus.ERROR {
-                    try? moc.save()
+                    do {
+                        try moc.save()
+                    } catch {
+                        print("cant save\(error)")
+                    }
                     self.processingStatus = ProcessingStatus.FINISHED
                 }
             }
