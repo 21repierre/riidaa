@@ -85,9 +85,42 @@ extension MangaReaderParserView {
     func parseLine(line: String) {
         DispatchQueue.global(qos: .userInteractive).async {
             self.loading = true
-            let results = Parser.parse(text: line)
+            
+            var results: [ParsingResult] = []
+            
+            let punctuations = #"[。．、，゠＝？！（）「」｛｝［］【】…‥〽〝〟　〜：♪＜＞]+"#
+            let regex = try! NSRegularExpression(pattern: punctuations, options: [])
+            
+            var lastIndex = 0
+            let nsLine = line as NSString
+            
+            for match in regex.matches(in: line, options: [], range: NSRange(location: 0, length: nsLine.length)) {
+                let range = match.range
+                if range.location > lastIndex {
+                    let chunk = nsLine.substring(with: NSRange(location: lastIndex, length: range.location - lastIndex))
+                    let result = Parser.parse(text: chunk)
+                    if !result.isEmpty {
+                        results.append(contentsOf: result)
+                    } else {
+                        results.append(ParsingResult(original: chunk, results: []))
+                    }
+                }
+                let punctuation = nsLine.substring(with: range)
+                results.append(ParsingResult(original: punctuation, results: []))
+                lastIndex = range.location + range.length
+            }
+            
+            if lastIndex < nsLine.length {
+                let chunk = nsLine.substring(from: lastIndex)
+                let result = Parser.parse(text: chunk)
+                if !result.isEmpty {
+                    results.append(contentsOf: result)
+                } else {
+                    results.append(ParsingResult(original: chunk, results: []))
+                }
+            }
+            
             if results.count > 0 {
-//                selectedElement = nil
                 self.parsedText = results
                 self.selectedElement = 0
             }
@@ -99,8 +132,8 @@ extension MangaReaderParserView {
 
 #Preview {
     MangaReaderParserView(
-        line: "",
-//        line: "君は学校を何だと思っているのかね",
+//        line: "",
+        line: "君は学校を何だと思っているのかね",
         parsedText: [
             ParsingResult(original: "君", results: [
                 TermDeinflection(term: TermDB(term: "君", reading: "きみ", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflection: Deinflection(text: "君", inflections: [], types: []))
