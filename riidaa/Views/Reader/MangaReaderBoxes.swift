@@ -9,6 +9,8 @@ import SwiftUI
 
 struct MangaReaderBoxes: View {
     
+    @EnvironmentObject var settings: SettingsModel
+    
     var boxes: [PageBoxModel]
     var scale: Double
     var offsetX: Double
@@ -18,21 +20,27 @@ struct MangaReaderBoxes: View {
     
     var body: some View {
         ForEach(boxes, id: \.self) { box in
-            Rectangle()
-                .fill(Color.red.opacity(0.25))
-                .border(Color.red, width: 1)
-                .rotationEffect(Angle(degrees: box.rotation))
-                .frame(
-                    width: Double(box.width) * scale,
-                    height: Double(box.height) * scale
-                )
-                .offset(
-                    x: Double(box.x + box.width / 2) * scale - offsetX,
-                    y: Double(box.y + box.height / 2) * scale - offsetY
-                )
-                .onTapGesture {
-                    currentLine = box.text
-                }
+            ZStack {
+                Rectangle()
+                    .fill(Color.clear)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        currentLine = box.text
+                    }
+                
+                Rectangle()
+                    .fill(settings.backgroundColorEnabled ? settings.backgroundColor.wrappedValue : Color.clear)
+                    .border(settings.borderColorEnabled ? settings.borderColor.wrappedValue : Color.clear, width: settings.borderSize)
+            }
+            .frame(
+                width: Double(box.width) * scale + settings.padding,
+                height: Double(box.height) * scale + settings.padding
+            )
+            .offset(
+                x: Double(box.x + box.width / 2) * scale - offsetX,
+                y: Double(box.y + box.height / 2) * scale - offsetY
+            )
+            .rotationEffect(Angle(degrees: box.rotation))
         }
     }
 }

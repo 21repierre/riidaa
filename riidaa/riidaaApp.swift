@@ -14,6 +14,7 @@ struct riidaaApp: App {
     
     let CoreController = CoreDataManager.shared
     @StateObject var appManager: AppManager = AppManager.shared
+    @StateObject var settings: SettingsModel = SettingsModel()
     
     var body: some Scene {
         WindowGroup {
@@ -26,6 +27,7 @@ struct riidaaApp: App {
                 HomeView()
                     .environment(\.managedObjectContext, CoreController.context)
                     .environmentObject(appManager)
+                    .environmentObject(settings)
             }
         }
     }

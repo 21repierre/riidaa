@@ -12,9 +12,12 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section(header: Text("Dictionaries")) {
+                Section(header: Text("Reader")) {
                     NavigationLink(destination: DictionariesView()) {
                         Text("Manage Dictionaries")
+                    }
+                    NavigationLink(destination: ReaderSettings()) {
+                        Text("Reader Settings")
                     }
                 }
                 .listRowBackground(Color(.systemGray6))

@@ -41,7 +41,6 @@ struct MangaReaderParserView: View {
                                 }
                         }
                     }
-                    //                    .padding([.vertical], 5)
                 }
                 if let selectedElement = selectedElement {
                     ScrollView(showsIndicators: false) {
