@@ -15,65 +15,76 @@ struct MangaReaderParserView: View {
     @State var loading = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if line == "" {
-                Spacer()
-                Text("Select a text box")
-                    .font(.title2)
-                    .italic()
-                    .foregroundStyle(.secondary)
-                Spacer()
-            } else if loading {
-                ProgressView()
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 0) {
-                        ForEach(Array(parsedText.enumerated()), id: \.element) { index, element in
-                            Text(element.original)
-                                .font(.largeTitle)
-                                .padding([.horizontal], 4)
-                                .padding([.vertical], 7)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(selectedElement == index ? Color.blue.opacity(0.3) : Color.clear)
-                                .cornerRadius(10)
-                                .onTapGesture {
-                                    selectedElement = index
-                                }
-                        }
-                    }
-                }
-                if let selectedElement = selectedElement {
-                    ScrollView(showsIndicators: false) {
-                        LazyVStack(alignment: .leading) {
-                            ForEach(parsedText[selectedElement].results, id: \.self) { result in
-                                ResultView(result: result)
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 10) {
+                if loading {
+                    ProgressView()
+                } else if line == "" && self.parsedText.isEmpty {
+                    Spacer()
+                    Text("Select a text box")
+                        .font(.title2)
+                        .italic()
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                } else {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 0) {
+                            ForEach(Array(parsedText.enumerated()), id: \.element) { index, element in
+                                Text(element.original)
+                                    .font(.largeTitle)
+                                    .padding([.horizontal], 4)
+                                    .padding([.vertical], 7)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(selectedElement == index ? Color.blue.opacity(0.3) : Color.clear)
+                                    .cornerRadius(10)
+                                    .onTapGesture {
+                                        selectedElement = index
+                                    }
                             }
                         }
                     }
-                    .padding([.horizontal])
-                    .frame(
-                        minWidth: 0,
-                        maxWidth: .infinity,
-                        minHeight: 0,
-                        maxHeight: .infinity,
-                        alignment: .leading
-                    )
+                    if let selectedElement = selectedElement {
+                        ScrollView(showsIndicators: false) {
+                            LazyVStack(alignment: .leading) {
+                                ForEach(parsedText[selectedElement].results, id: \.self) { result in
+                                    ResultView(result: result)
+                                }
+                            }
+                        }
+                        .padding([.horizontal])
+                        .frame(
+                            minWidth: 0,
+                            maxWidth: .infinity,
+                            minHeight: 0,
+                            maxHeight: .infinity,
+                            alignment: .leading
+                        )
+                    }
+                    Spacer()
                 }
-                Spacer()
             }
-        }
-        .padding([.leading, .trailing])
-        .onChange(of: line) { newLine in
-            if newLine == "" {
-                self.selectedElement = nil
-                parsedText = []
-            } else {
-                parseLine(line: newLine)
+            .padding([.leading, .trailing])
+            .onChange(of: line) { newLine in
+                if newLine == "" {
+                    self.selectedElement = nil
+                    parsedText = []
+                } else {
+                    parseLine(line: newLine)
+                }
             }
-        }
-        .onAppear {
-            if line != "" {
-                parseLine(line: line)
+            .onAppear {
+                if line != "" {
+                    parseLine(line: line)
+                }
+            }
+            .navigationDestination(for: InflectionDescription.self) { desc in
+                VStack(alignment: .leading) {
+                    DetailedView(structuredContent: desc.description)
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .navigationTitle("\(desc.short) form")
+                .navigationBarTitleDisplayMode(.large)
             }
         }
     }
@@ -131,8 +142,8 @@ extension MangaReaderParserView {
 
 #Preview {
     MangaReaderParserView(
-//        line: "",
-        line: "君は学校を何だと思っているのかね",
+        line: "",
+        //        line: "君は学校を何だと思っているのかね",
         parsedText: [
             ParsingResult(original: "君", results: [
                 TermDeinflection(term: TermDB(term: "君", reading: "きみ", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflection: Deinflection(text: "君", inflections: [], types: []))
@@ -194,7 +205,7 @@ struct ResultView: View {
                         Text("«")
                             .font(.callout)
                             .padding([.horizontal], 3)
-                        Text(rule.rawValue)
+                        NavigationLink(rule.description.short, value: rule.description)
                             .font(.callout)
                     }
                 }
@@ -218,7 +229,6 @@ struct ResultView: View {
                     .background(Color.purple)
                     .roundedCorners(5, corners: .allCorners)
             }
-            //            Text(String(data: result.term.definitions, encoding: .utf8)!)
             ForEach(result.term.parseDefinition, id: \.self) { definition in
                 switch (definition) {
                 case .text(let s):
@@ -228,16 +238,14 @@ struct ResultView: View {
                     DetailedView(structuredContent: d)
                         .padding(.bottom, 10)
                         .onAppear {
-//                            print(d)
+                            //                            print(d)
                         }
                 default:
                     Text("TO DO")
                         .padding(.bottom, 10)
                 }
             }
-        }
-        .onAppear {
-            //            print(result.term.parseDefinition)
+            
         }
     }
 }
@@ -251,8 +259,8 @@ struct DetailedView: View, Identifiable {
         switch structuredContent {
         case .text(let string):
             displayText(text: string.content)
-//            Text(string.content)
-//                .font(.footnote)
+            //            Text(string.content)
+            //                .font(.footnote)
         case .array(let array):
             displayList(arr: array, prefix: nil)
         case .newline:
@@ -276,10 +284,10 @@ struct DetailedView: View, Identifiable {
         case .table(let table):
             DetailedView(structuredContent: table.data)
         case .numberedList(let c):
-//            EmptyView()
+            //            EmptyView()
             displayNumberedList(arr: c.content)
         case .list(let c):
-//            EmptyView()
+            //            EmptyView()
             displayList(arr: c.content, prefix: c.prefix)
         }
     }
@@ -299,7 +307,7 @@ struct DetailedView: View, Identifiable {
             displayLink(link: link)
         default:
             Text("@c>\(elem.data)")
-//            EmptyView()
+            //            EmptyView()
         }
     }
     
@@ -347,19 +355,19 @@ struct DetailedView: View, Identifiable {
         case .inlineContainer(_), .text(_):
             if arr.count > 1 {
                 HStack(spacing: 5) {
-//                    Text("ca \(arr.count)")
+                    //                    Text("ca \(arr.count)")
                     ForEach(arr) { elem in
                         switch elem {
                         case .text(let s):
                             displayText(text: s.content)
-//                            Text(s.content)
-//                                .font(.callout)
+                            //                            Text(s.content)
+                            //                                .font(.callout)
                                 .padding([.trailing], 5)
                         case .inlineContainer(let c):
                             displayInlineElement(elem: c)
                         default:
                             Text("@dleI>\(elem)")
-//                            EmptyView()
+                            //                            EmptyView()
                             //                        DetailedView(structuredContent: elem)
                                 .font(.callout)
                                 .padding([.trailing], 5)
@@ -372,7 +380,7 @@ struct DetailedView: View, Identifiable {
                 }
             } else {
                 DetailedView(structuredContent: arr.first!)
-//                Text("le>\(arr)")
+                //                Text("le>\(arr)")
             }
         default:
             if let elem = arr.first {
@@ -388,7 +396,7 @@ struct DetailedView: View, Identifiable {
                     displayLink(link: lnk)
                 default:
                     Text("@dle>\(elem)")
-//                    EmptyView()
+                    //                    EmptyView()
                 }
             } else {
                 Text("Empty")
@@ -403,7 +411,7 @@ struct DetailedView: View, Identifiable {
             EmptyView()
         } else {
             VStack(alignment: .leading) {
-//                Text("\(arr.count) \(arr)")
+                //                Text("\(arr.count) \(arr)")
                 ForEach(arr) { elems in
                     HStack(alignment: .top) {
                         if let prefix = prefix {
@@ -423,7 +431,7 @@ struct DetailedView: View, Identifiable {
             EmptyView()
         } else {
             VStack(alignment: .leading) {
-//                Text("n\(arr.count)")
+                //                Text("n\(arr.count)")
                 ForEach(Array(arr.enumerated()), id: \.offset) { i, elems in
                     HStack(alignment: .top) {
                         CircularText(text: "\(i+1)")

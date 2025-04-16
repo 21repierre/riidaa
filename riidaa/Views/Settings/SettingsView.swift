@@ -44,6 +44,7 @@ struct SettingsView: View {
     SettingsView()
         .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
         .environmentObject(AppManager.shared)
+        .environmentObject(SettingsModel())
         .onAppear(perform: {
             let dic = DictionaryDB(
                 id: 1,
