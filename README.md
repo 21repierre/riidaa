@@ -4,4 +4,7 @@
 	<img src="./assets/logo.png" width="30%" height="30%">
 </p>
 
-TODO
+# TODO
+
+- Update dictionary
+- Manually offset term length in parser view
