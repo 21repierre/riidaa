@@ -20,6 +20,7 @@ public enum WordType: String, Sendable, CaseIterable {
     case vs
     case vk
     case vz
+    
     case te_form
     case masu_form
     case adj_i = "adj-i"
@@ -38,12 +39,33 @@ public enum WordType: String, Sendable, CaseIterable {
     ]
     
     public var children: [WordType] {
-        return (WordType.childrenMap[self] ?? []).flatMap { $0.children }
+        guard var c = WordType.childrenMap[self] else { return [] }
+        c.append(contentsOf: c.flatMap { $0.children })
+        return c
     }
     
     public static func fromString(s: String) -> WordType? {
         return self.allCases.first{ $0.rawValue == s }
     }
+}
+
+extension Array where Element == WordType {
+    
+    public func inflectionMatch(wl: [WordType]) -> Bool {
+        if self.isEmpty {
+            return true
+        }
+        for element in self {
+            for element2 in wl {
+                if element == element2 || element2.children.firstIndex(of: element) != nil {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    
+    
 }
 
 public struct InflectionDescription: Hashable {
@@ -239,20 +261,20 @@ public enum InflectionRule: String, Sendable, Identifiable {
     case ku = "ーく"
     case imperative = "imperative"
     case continuative = "continuative"
-    case sa = "ーさ" //
-    case passive = "passive" //
-    case potential = "potential" //
-    case potential_passive = "potential or passive" //
-    case volitional = "volitional" //
-    case volitional_slang = "volitional slang" //
-    case mai = "ーまい" //
-    case oku = "ーおく" //
-    case ki = "ーき" //
-    case ge = "ーげ" //
-    case garu = "ーがる" //
-    case e = "ーえ" //
-    case n_slang = "ーんな" //
-    case imperative_negative_slang = "imperative negative slang" //
+    case sa = "ーさ" 
+    case passive = "passive" 
+    case potential = "potential"
+    case potential_passive = "potential or passive"
+    case volitional = "volitional"
+    case volitional_slang = "volitional slang" 
+    case mai = "ーまい" 
+    case oku = "ーおく"
+    case ki = "ーき"
+    case ge = "ーげ" 
+    case garu = "ーがる" 
+    case e = "ーえ" 
+    case n_slang = "ーんな" 
+    case imperative_negative_slang = "imperative negative slang" 
     case kansai_negative = "関西弁 negative" //
     case kansai_te = "関西弁　ーて" //
     case kansai_ta = "関西弁　ーた" //

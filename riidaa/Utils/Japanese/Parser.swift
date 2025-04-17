@@ -18,6 +18,7 @@ public struct TermDeinflection : Hashable {
 }
 
 public struct ParsingResult : Hashable {
+//    public let id: UUID = UUID()
     
     public let original: String
     public let results: [TermDeinflection]
@@ -31,10 +32,12 @@ public struct Parser {
         var l = 0
         var parts: [ParsingResult] = []
         
-        while l < text.count - 1 {
+        var endText = text.count - 1
+        
+        while l < endText {
             var possibilities: [ParsingResult] = []
             
-            for i in (l...text.count-1) {
+            for i in (l...endText) {
                 let cutBefore = text.index(text.startIndex, offsetBy: l)
                 let cutAfter = text.index(text.endIndex, offsetBy: l-i)
                 let cut = String(text[cutBefore..<cutAfter])
@@ -48,7 +51,7 @@ public struct Parser {
                 for deinflection in deinflections {
                     for term in results where
                     (term.term == deinflection.text || term.reading == deinflection.text) &&
-                    (deinflection.types.count == 0 || term.wordTypes.count == 0 || term.wordTypes == deinflection.types) {
+                    (deinflection.types.count == 0 || term.wordTypes.count == 0 ||  deinflection.types.inflectionMatch(wl: term.wordTypes)) {
                         terms.append(TermDeinflection(term: term, deinflection: deinflection))
                     }
                 }
@@ -61,9 +64,23 @@ public struct Parser {
             }
             
             if !possibilities.isEmpty {
-                parts.append(possibilities[0])
-                l += possibilities[0].original.count
+                guard let bestPos = possibilities.max(by: {a, b in
+                    guard let af = a.results.first, let bf = b.results.first else {return false}
+                    return (af.term.score > 0 && bf.term.score > 0 ? a.original.count < b.original.count : af.term.score < bf.term.score)
+//                    return a.results.first?.term.score ?? Int64.min < b.results.first?.term.score ?? Int64.min
+                }) else { break }
+//                parts.append(possibilities[0])
+                parts.append(bestPos)
+                l += bestPos.original.count
+                if l == text.count-1 {
+                    endText += 1
+                }
+//                l += possibilities[0].original.count
             } else {
+                let cutBefore = text.index(text.startIndex, offsetBy: l)
+                let cutAfter = text.index(text.endIndex, offsetBy: 0)
+                let cut = String(text[cutBefore..<cutAfter])
+                parts.append(ParsingResult(original: cut, results: []))
                 break
             }
         }

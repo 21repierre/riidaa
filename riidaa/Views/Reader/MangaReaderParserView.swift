@@ -29,7 +29,7 @@ struct MangaReaderParserView: View {
                 } else {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 0) {
-                            ForEach(Array(parsedText.enumerated()), id: \.element) { index, element in
+                            ForEach(Array(parsedText.enumerated()), id: \.offset) { index, element in
                                 Text(element.original)
                                     .font(.largeTitle)
                                     .padding([.horizontal], 4)
