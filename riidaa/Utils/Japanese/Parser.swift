@@ -18,7 +18,6 @@ public struct TermDeinflection : Hashable {
 }
 
 public struct ParsingResult : Hashable {
-//    public let id: UUID = UUID()
     
     public let original: String
     public let results: [TermDeinflection]
@@ -37,7 +36,7 @@ public struct Parser {
         while l < endText {
             var possibilities: [ParsingResult] = []
             
-            for i in (l...endText) {
+            for i in (l...text.count - 1) {
                 let cutBefore = text.index(text.startIndex, offsetBy: l)
                 let cutAfter = text.index(text.endIndex, offsetBy: l-i)
                 let cut = String(text[cutBefore..<cutAfter])
@@ -66,16 +65,13 @@ public struct Parser {
             if !possibilities.isEmpty {
                 guard let bestPos = possibilities.max(by: {a, b in
                     guard let af = a.results.first, let bf = b.results.first else {return false}
-                    return (af.term.score > 0 && bf.term.score > 0 ? a.original.count < b.original.count : af.term.score < bf.term.score)
-//                    return a.results.first?.term.score ?? Int64.min < b.results.first?.term.score ?? Int64.min
+                    return (af.term.score >= 0 && bf.term.score >= 0 ? a.original.count < b.original.count : af.term.score < bf.term.score)
                 }) else { break }
-//                parts.append(possibilities[0])
                 parts.append(bestPos)
                 l += bestPos.original.count
                 if l == text.count-1 {
                     endText += 1
                 }
-//                l += possibilities[0].original.count
             } else {
                 let cutBefore = text.index(text.startIndex, offsetBy: l)
                 let cutAfter = text.index(text.endIndex, offsetBy: 0)

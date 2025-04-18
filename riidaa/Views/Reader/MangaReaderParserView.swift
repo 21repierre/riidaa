@@ -98,7 +98,7 @@ extension MangaReaderParserView {
             
             var results: [ParsingResult] = []
             
-            let punctuations = #"[。．、，゠＝？！（）「」｛｝［］【】…‥〽〝〟　〜：♪＜＞]+"#
+            let punctuations = #"[。．、，゠＝？！（）「」｛｝［］【】…‥〽〝〟　〜：♪＜＞～]+"#
             let regex = try! NSRegularExpression(pattern: punctuations, options: [])
             
             var lastIndex = 0
