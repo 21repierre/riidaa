@@ -258,11 +258,9 @@ struct DetailedView: View, Identifiable {
     var body: some View {
         switch structuredContent {
         case .text(let string):
-            displayText(text: string.content)
-            //            Text(string.content)
-            //                .font(.footnote)
+            ParserText(text: string.content)
         case .array(let array):
-            displayList(arr: array, prefix: nil)
+            ParserList(array: array, prefix: nil)
         case .newline:
             Spacer()
         case .link(let l):
@@ -284,163 +282,9 @@ struct DetailedView: View, Identifiable {
         case .table(let table):
             DetailedView(structuredContent: table.data)
         case .numberedList(let c):
-            //            EmptyView()
-            displayNumberedList(arr: c.content)
+            ParserNumberedList(array: c.content)
         case .list(let c):
-            //            EmptyView()
-            displayList(arr: c.content, prefix: c.prefix)
-        }
-    }
-    
-    @ViewBuilder
-    func displayContainer(elem: StructuredContentContainer) -> some View {
-        switch elem.data {
-        case .array(let array):
-            displayList(arr: array, prefix: nil)
-        case .text(let text):
-            displayText(text: text.content)
-        case .container(let container):
-            displayContainer(elem: container)
-        case .list(let list):
-            displayList(arr: list.content, prefix: list.prefix)
-        case .link(let link):
-            displayLink(link: link)
-        default:
-            Text("@c>\(elem.data)")
-            //            EmptyView()
-        }
-    }
-    
-    @ViewBuilder
-    func displayText(text: String) -> some View {
-        Text("\(text)")
-    }
-    
-    @ViewBuilder
-    func displayInlineElement(elem: StructuredContentContainer) -> some View {
-        switch elem.data {
-        case .text(let s):
-            displayText(text: s.content)
-                .font(elem.font)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 4)
-                .background(elem.backgroundColor)
-                .roundedCorners(5, corners: .allCorners)
-        case .array(let arr):
-            displayList(arr: arr, prefix: nil)
-        case .container(let container):
-            displayContainer(elem: container)
-        default:
-            Text("@ic>\(elem.data)")
-        }
-    }
-    
-    @ViewBuilder
-    func displayLink(link: LinkContent) -> some View {
-        switch link.data {
-        case .text(let text):
-            displayText(text: text.content)
-        case .array(let arr):
-            displayList(arr: arr, prefix: nil)
-        case .container(let container):
-            displayContainer(elem: container)
-        default:
-            Text("@lnk>\(link.data)")
-        }
-    }
-    
-    @ViewBuilder
-    func displayListElement(arr: [StructuredContent]) -> some View {
-        switch arr.first {
-        case .inlineContainer(_), .text(_):
-            if arr.count > 1 {
-                HStack(spacing: 5) {
-                    //                    Text("ca \(arr.count)")
-                    ForEach(arr) { elem in
-                        switch elem {
-                        case .text(let s):
-                            displayText(text: s.content)
-                            //                            Text(s.content)
-                            //                                .font(.callout)
-                                .padding([.trailing], 5)
-                        case .inlineContainer(let c):
-                            displayInlineElement(elem: c)
-                        default:
-                            Text("@dleI>\(elem)")
-                            //                            EmptyView()
-                            //                        DetailedView(structuredContent: elem)
-                                .font(.callout)
-                                .padding([.trailing], 5)
-                        }
-                        //                    DetailedView(structuredContent: elem)
-                        //                        .font(.callout)
-                        //                        .padding([.trailing], 5)
-                    }
-                    .id(UUID())
-                }
-            } else {
-                DetailedView(structuredContent: arr.first!)
-                //                Text("le>\(arr)")
-            }
-        default:
-            if let elem = arr.first {
-                switch elem {
-                case .list(let list):
-                    displayList(arr: list.content, prefix: list.prefix)
-                case .numberedList(let list):
-                    displayNumberedList(arr: list.content)
-                    
-                case .container(let container):
-                    displayContainer(elem: container)
-                case .link(let lnk):
-                    displayLink(link: lnk)
-                default:
-                    Text("@dle>\(elem)")
-                    //                    EmptyView()
-                }
-            } else {
-                Text("Empty")
-                EmptyView()
-            }
-        }
-    }
-    
-    @ViewBuilder
-    func displayList(arr: [[StructuredContent]], prefix: String?) -> some View {
-        if arr.isEmpty {
-            EmptyView()
-        } else {
-            VStack(alignment: .leading) {
-                //                Text("\(arr.count) \(arr)")
-                ForEach(arr) { elems in
-                    HStack(alignment: .top) {
-                        if let prefix = prefix {
-                            Text(prefix)
-                        }
-                        displayListElement(arr: elems)
-                    }
-                }
-                .id(UUID())
-            }
-        }
-    }
-    
-    @ViewBuilder
-    func displayNumberedList(arr: [[StructuredContent]]) -> some View {
-        if arr.isEmpty {
-            EmptyView()
-        } else {
-            VStack(alignment: .leading) {
-                //                Text("n\(arr.count)")
-                ForEach(Array(arr.enumerated()), id: \.offset) { i, elems in
-                    HStack(alignment: .top) {
-                        CircularText(text: "\(i+1)")
-                            .padding([.top], 2)
-                        displayListElement(arr: elems)
-                    }
-                }
-                .id(UUID())
-            }
+            ParserList(array: c.content, prefix: c.prefix)
         }
     }
     
