@@ -44,12 +44,15 @@ public struct Parser {
                 
                 var terms: [TermDeinflection] = []
          
-                let results = SQLiteManager.shared.findTerms(texts: deinflections.compactMap({ di in
-                    di.text
-                }))
+                let mappedTerms: [[String]] = deinflections.compactMap({ di in
+                    [di.text, di.text.katakanaToHiragana()]
+                })
+                
+                let results = SQLiteManager.shared.findTerms(texts: mappedTerms.flatMap { $0 })
                 for deinflection in deinflections {
                     for term in results where
-                    (term.term == deinflection.text || term.reading == deinflection.text) &&
+                    (term.term.katakanaToHiragana() == deinflection.text.katakanaToHiragana() ||
+                     term.reading.katakanaToHiragana() == deinflection.text.katakanaToHiragana()) &&
                     (deinflection.types.count == 0 || term.wordTypes.count == 0 ||  deinflection.types.inflectionMatch(wl: term.wordTypes)) {
                         terms.append(TermDeinflection(term: term, deinflection: deinflection))
                     }
