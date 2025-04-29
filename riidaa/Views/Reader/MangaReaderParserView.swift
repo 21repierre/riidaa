@@ -14,8 +14,10 @@ struct MangaReaderParserView: View {
     @State var selectedElement: Int?
     @State var loading = false
     
+    @State private var localPath = NavigationPath()
+    
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $localPath) {
             VStack(alignment: .leading, spacing: 10) {
                 if loading {
                     ProgressView()
@@ -47,7 +49,7 @@ struct MangaReaderParserView: View {
                         ScrollView(showsIndicators: false) {
                             LazyVStack(alignment: .leading) {
                                 ForEach(parsedText[selectedElement].results, id: \.self) { result in
-                                    ResultView(result: result)
+                                    ResultView(result: result, localPath: $localPath)
                                 }
                             }
                         }
@@ -193,6 +195,8 @@ extension MangaReaderParserView {
 struct ResultView: View {
     @State var result: TermDeinflection
     
+    @Binding var localPath: NavigationPath
+    
     var body: some View {
         VStack(alignment: .leading) {
             Text("\(result.term.term) (\(result.term.reading))")
@@ -205,8 +209,14 @@ struct ResultView: View {
                         Text("«")
                             .font(.callout)
                             .padding([.horizontal], 3)
-                        NavigationLink(rule.description.short, value: rule.description)
-                            .font(.callout)
+                        Button {
+                            localPath.append(rule.description)
+                        } label: {
+                            Text(rule.description.short)
+                                .font(.callout)
+                        }
+//                        NavigationLink(rule.description.short, value: rule.description)
+//                            .font(.callout)
                     }
                 }
                 .foregroundStyle(Color(.gray))

@@ -19,7 +19,7 @@ public struct TermDeinflection : Hashable {
 
 public struct ParsingResult : Hashable {
     
-    public let original: String
+    public var original: String
     public let results: [TermDeinflection]
     
 }
@@ -76,11 +76,15 @@ public struct Parser {
                     endText += 1
                 }
             } else {
-                let cutBefore = text.index(text.startIndex, offsetBy: l)
-                let cutAfter = text.index(text.endIndex, offsetBy: 0)
-                let cut = String(text[cutBefore..<cutAfter])
-                parts.append(ParsingResult(original: cut, results: []))
-                break
+                let c = text[text.index(text.startIndex, offsetBy: l)]
+                if var lastPart = parts.last, lastPart.results.isEmpty {
+                    lastPart.original += String(c)
+                } else {
+                    parts.append(ParsingResult(original: String(c), results: []))
+                }
+                if l >= text.count-1 {
+                    break
+                }
             }
         }
         return parts
