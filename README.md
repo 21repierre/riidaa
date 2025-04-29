@@ -4,7 +4,25 @@
 	<img src="./assets/logo.png" width="30%" height="30%">
 </p>
 
-# TODO
+## Features
+
+- Create manga titles using Anilist API
+- Add volumes that have been OCRed with mokuro (see [volume format](#volume-format))
+- Import Yomitan dictionaries
+- Click on a text box when reading to pop up the sentence with definitions
+- Change the appearance of the text boxes
+
+## TODO
 
 - Update dictionary
 - Manually offset term length in parser view
+
+## Volume format
+
+When doing the OCR make sure the volume format is `<title> v<number>` (e.g. "*One Piece v012*"). You can also manualy edit the *mokuro* file after the OCR.
+
+Then, rename the *mokuro* file using the same format (e.g. "*One Piece v012.mokuro*"). 
+
+Also create a directory with the same name (e.g. "*One Piece v012*"). Put the volume's images inside this folder (e.g. "*One Piece v012/143.jpg*").
+
+Finally, zip the folder and the *mokuro* file and you are good to go!
