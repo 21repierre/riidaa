@@ -85,6 +85,7 @@ public struct Parser {
                 if l >= text.count-1 {
                     break
                 }
+                l += 1
             }
         }
         return parts

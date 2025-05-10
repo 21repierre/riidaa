@@ -14,79 +14,89 @@ struct MangaReaderParserView: View {
     @State var selectedElement: Int?
     @State var loading = false
     
-    @State private var localPath = NavigationPath()
+    @State private var inflectionDescription: InflectionDescription? //= InflectionRule.ya.description
     
     var body: some View {
-        NavigationStack(path: $localPath) {
-            VStack(alignment: .leading, spacing: 10) {
-                if loading {
-                    ProgressView()
-                } else if line == "" && self.parsedText.isEmpty {
-                    Spacer()
-                    Text("Select a text box")
-                        .font(.title2)
-                        .italic()
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                } else {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 0) {
-                            ForEach(Array(parsedText.enumerated()), id: \.offset) { index, element in
-                                Text(element.original)
-                                    .font(.largeTitle)
-                                    .padding([.horizontal], 4)
-                                    .padding([.vertical], 7)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(selectedElement == index ? Color.blue.opacity(0.3) : Color.clear)
-                                    .cornerRadius(10)
-                                    .onTapGesture {
-                                        selectedElement = index
-                                    }
-                            }
+        ZStack {
+            if let description = inflectionDescription {
+                VStack(alignment: .leading) {
+                    Button {
+                        inflectionDescription = nil
+                    } label: {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                                .scaledToFit()
+                            Text("Back")
                         }
                     }
-                    if let selectedElement = selectedElement {
-                        ScrollView(showsIndicators: false) {
-                            LazyVStack(alignment: .leading) {
-                                ForEach(parsedText[selectedElement].results, id: \.self) { result in
-                                    ResultView(result: result, localPath: $localPath)
+                    .padding()
+                    ParserDefinition(desc: description)
+                }
+                .transition(.move(edge: .trailing))
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    if loading {
+                        ProgressView()
+                    } else if line == "" && self.parsedText.isEmpty {
+                        Spacer()
+                        Text("Select a text box")
+                            .font(.title2)
+                            .italic()
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    } else {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 0) {
+                                ForEach(Array(parsedText.enumerated()), id: \.offset) { index, element in
+                                    Text(element.original)
+                                        .font(.largeTitle)
+                                        .padding([.horizontal], 4)
+                                        .padding([.vertical], 7)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(selectedElement == index ? Color.blue.opacity(0.3) : Color.clear)
+                                        .cornerRadius(10)
+                                        .onTapGesture {
+                                            selectedElement = index
+                                        }
                                 }
                             }
                         }
-                        .padding([.horizontal])
-                        .frame(
-                            minWidth: 0,
-                            maxWidth: .infinity,
-                            minHeight: 0,
-                            maxHeight: .infinity,
-                            alignment: .leading
-                        )
+                        if let selectedElement = selectedElement {
+                            ScrollView(showsIndicators: false) {
+                                LazyVStack(alignment: .leading) {
+                                    ForEach(parsedText[selectedElement].results, id: \.self) { result in
+                                        ResultView(result: result, definition: $inflectionDescription)
+                                    }
+                                }
+                            }
+                            .padding([.horizontal])
+                            .frame(
+                                minWidth: 0,
+                                maxWidth: .infinity,
+                                minHeight: 0,
+                                maxHeight: .infinity,
+                                alignment: .leading
+                            )
+                        }
+                        Spacer()
                     }
-                    Spacer()
                 }
+                .padding([.leading, .trailing])
+                .onChange(of: line) { newLine in
+                    if newLine == "" {
+                        self.selectedElement = nil
+                        parsedText = []
+                    } else {
+                        parseLine(line: newLine)
+                    }
+                }
+                .transition(.move(edge: .leading))
             }
-            .padding([.leading, .trailing])
-            .onChange(of: line) { newLine in
-                if newLine == "" {
-                    self.selectedElement = nil
-                    parsedText = []
-                } else {
-                    parseLine(line: newLine)
-                }
-            }
-            .onAppear {
-                if line != "" {
-                    parseLine(line: line)
-                }
-            }
-            .navigationDestination(for: InflectionDescription.self) { desc in
-                VStack(alignment: .leading) {
-                    DetailedView(structuredContent: desc.description)
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .navigationTitle("\(desc.short) form")
-                .navigationBarTitleDisplayMode(.large)
+        }
+        .animation(.easeInOut(duration: 0.25), value: inflectionDescription)
+        .onAppear {
+            if line != "" {
+                parseLine(line: line)
             }
         }
     }
@@ -195,7 +205,7 @@ extension MangaReaderParserView {
 struct ResultView: View {
     @State var result: TermDeinflection
     
-    @Binding var localPath: NavigationPath
+    @Binding var definition: InflectionDescription?
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -210,13 +220,16 @@ struct ResultView: View {
                             .font(.callout)
                             .padding([.horizontal], 3)
                         Button {
-                            localPath.append(rule.description)
+                            //                            localPath.append(rule.description)
+                            withAnimation {
+                                definition = rule.description
+                            }
                         } label: {
                             Text(rule.description.short)
                                 .font(.callout)
                         }
-//                        NavigationLink(rule.description.short, value: rule.description)
-//                            .font(.callout)
+                        //                        NavigationLink(rule.description.short, value: rule.description)
+                        //                            .font(.callout)
                     }
                 }
                 .foregroundStyle(Color(.gray))

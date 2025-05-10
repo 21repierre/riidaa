@@ -133,101 +133,903 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 ])
             )
         case .ba:
-            InflectionDescription(short: "ーば", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーば",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .ya:
-            InflectionDescription(short: "ーゃ", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーゃ",
+                description: .array([
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Contraction of ーば.")), tag: "span", font: .body))],
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "ければ → けりゃ (i-adjective)"))],
+                            [.text(StringContent(content: "ければ → きゃ (一段)"))],
+                            [.text(StringContent(content: "えば → や (五段)"))],
+                            [.text(StringContent(content: "けば → きゃ (五段)"))],
+                            [.text(StringContent(content: "げば → ぎゃ (五段)"))],
+                            [.text(StringContent(content: "せば → しゃ (五段)"))],
+                            [.text(StringContent(content: "てば → ちゃ (五段)"))],
+                            [.text(StringContent(content: "ねば → にゃ (五段)"))],
+                            [.text(StringContent(content: "べば → びゃ (五段)"))],
+                            [.text(StringContent(content: "めば → みゃ (五段)"))],
+                            [.text(StringContent(content: "れば → りゃ (五段)"))],
+                        ]))
+                    ]
+                ])
+            ) // ok
         case .cha:
-            InflectionDescription(short: "ーちゃ", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーちゃ",
+                description: .array([
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Contraction of ーては.")), tag: "span", font: .body))],
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Explains how something always happens under the condition that it marks."))],
+                            [.text(StringContent(content: "Expresses the repetition (of a series of) actions."))],
+                            [.text(StringContent(content: "Indicates a hypothetical situation in which the speaker gives a (negative) evaluation about the other party's intentions."))],
+                            [.text(StringContent(content: "Used in \"must not\" patterns like ーてはいけない."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach は after the て-form of verbs."))],
+                            [.text(StringContent(content: "Contract ては into ちゃ."))],
+                        ]))
+                    ]
+                ])
+            )
         case .chau:
-            InflectionDescription(short: "ーちゃう", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーちゃう",
+                description: .array([
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Contraction of ーてしまう.")), tag: "span", font: .body))],
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Shows a sense of regret/surprise when you did have volition in doing something, but it turned out to be bad to do."))],
+                            [.text(StringContent(content: "Shows perfective/punctual achievement. This shows that an action has been completed."))],
+                            [.text(StringContent(content: "Shows unintentional action–“accidentally."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach しまう after the て-form of verbs."))],
+                            [.text(StringContent(content: "Contract てしまう into ちゃう."))],
+                        ]))
+                    ]
+                ])
+            )
         case .shimau:
-            InflectionDescription(short: "ーしまう", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーしまう",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Shows a sense of regret/surprise when you did have volition in doing something, but it turned out to be bad to do."))],
+                            [.text(StringContent(content: "Shows perfective/punctual achievement. This shows that an action has been completed."))],
+                            [.text(StringContent(content: "Shows unintentional action–“accidentally."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach しまう after the て-form of verbs."))],
+                        ]))
+                    ]
+                ])
+            )
         case .chimau:
-            InflectionDescription(short: "ーちまう", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーちまう",
+                description: .array([
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Contraction of ーてしまう.")), tag: "span", font: .body))],
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Shows a sense of regret/surprise when you did have volition in doing something, but it turned out to be bad to do."))],
+                            [.text(StringContent(content: "Shows perfective/punctual achievement. This shows that an action has been completed."))],
+                            [.text(StringContent(content: "Shows unintentional action–“accidentally."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach しまう after the て-form of verbs."))],
+                            [.text(StringContent(content: "Contract てしまう into ちまう."))],
+                        ]))
+                    ]
+                ])
+            )
         case .nasai:
-            InflectionDescription(short: "ーなさい", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーなさい",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Polite imperative suffix."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach なさい after the continuative form (連用形) of verbs."))],
+                        ]))
+                    ]
+                ])
+            )
         case .sou:
-            InflectionDescription(short: "ーそう", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーそう",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Appearing that; looking like."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach そう to the continuative form (連用形) of verbs, or to the stem of adjectives."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Example:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "雨が降りそうです。→ It looks like it's raining."))],
+                        ]))
+                    ]
+                ])
+            )
         case .sugiru:
-            InflectionDescription(short: "ーすぎる", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーすぎる",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Shows something \"is too...\" or someone is doing something \"too much\"."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach すぎる to the continuative form (連用形) of verbs, or to the stem of adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .ta:
-            InflectionDescription(short: "ーた", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーた",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Indicates a reality that has happened in the past."))],
+                            [.text(StringContent(content: "Indicates the completion of an action."))],
+                            [.text(StringContent(content: "Indicates the confirmation of a matter."))],
+                            [.text(StringContent(content: "Indicates the speaker's confidence that the action will definitely be fulfilled."))],
+                            [.text(StringContent(content: "Indicates the events that occur before the main clause are represented as relative past."))],
+                            [.text(StringContent(content: "Indicates a mild imperative/command."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach た to the continuative form (連用形) of verbs after euphonic change form."))],
+                            [.text(StringContent(content: "Attach かった to the stem of i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .negative:
-            InflectionDescription(short: "negative", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "negative",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Negative form of verbs."))],
+                            [.text(StringContent(content: "Expresses a feeling of solicitation to the other party."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ない to the irrealis form (未然形) of verbs."))],
+                            [.text(StringContent(content: "Attach くない to the stem of i-adjectives."))],
+                            [.text(StringContent(content: "Transform ます in ません."))],
+                        ]))
+                    ]
+                ])
+            )
         case .causative:
-            InflectionDescription(short: "causative", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "causative",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Describes the intention to make someone do something."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach させる to the irrealis form (未然形) of ichidan (一段) verbs and くる."))],
+                            [.text(StringContent(content: "Attach せる to the irrealis form (未然形) of godan (五段) verbs and する."))],
+                            [.text(StringContent(content: "It itself conjugates as an ichidan (一段) verb."))],
+                        ]))
+                    ]
+                ])
+            ) // ok
         case .short_causative:
-            InflectionDescription(short: "short-causative", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "short-causative",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .tai:
-            InflectionDescription(short: "ーたい", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーたい",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .tara:
-            InflectionDescription(short: "ーたら", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーたら",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .tari:
-            InflectionDescription(short: "ーたり", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーたり",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .zu:
-            InflectionDescription(short: "ーず", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーず",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .nu:
-            InflectionDescription(short: "ーぬ", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーぬ",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .n:
-            InflectionDescription(short: "ーん", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーん",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .nbakari:
-            InflectionDescription(short: "ーんばかり", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーんばかり",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .ntosuru:
-            InflectionDescription(short: "ーんとする", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーんとする",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .mu:
-            InflectionDescription(short: "ーむ", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーむ",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .zaru:
-            InflectionDescription(short: "ーざる", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーざる",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .neba:
-            InflectionDescription(short: "ーねば", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーねば",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .ku:
-            InflectionDescription(short: "ーく", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーく",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .imperative:
-            InflectionDescription(short: "imperative", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "imperative",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .continuative:
-            InflectionDescription(short: "continuative", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "continuative",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .sa:
-            InflectionDescription(short: "ーさ", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーさ",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .passive:
-            InflectionDescription(short: "passive", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "passive",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .potential:
-            InflectionDescription(short: "potential", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "potential",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .potential_passive:
-            InflectionDescription(short: "potential-passive", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "potential-passive",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .volitional:
-            InflectionDescription(short: "volutional", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "volutional",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .volitional_slang:
-            InflectionDescription(short: "volitional-slang", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "volitional-slang",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .mai:
-            InflectionDescription(short: "ーまい", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーまい",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .oku:
-            InflectionDescription(short: "ーおく", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーおく",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .ki:
-            InflectionDescription(short: "ーき", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーき",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .ge:
-            InflectionDescription(short: "ーげ", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーげ",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .garu:
-            InflectionDescription(short: "ーがる", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーがる",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .e:
-            InflectionDescription(short: "ーえ", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーえ",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .n_slang:
-            InflectionDescription(short: "ーん-slang", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーん-slang",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .imperative_negative_slang:
-            InflectionDescription(short: "imperative-negative-slang", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "imperative-negative-slang",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .kansai_negative:
-            InflectionDescription(short: "negative（関西弁）", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "negative（関西弁）",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .kansai_te:
-            InflectionDescription(short: "ーて（関西弁）", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーて（関西弁）",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .kansai_ta:
-            InflectionDescription(short: "ーた（関西弁）", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーた（関西弁）",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .kansai_tara:
-            InflectionDescription(short: "ーたら（関西弁）", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーたら（関西弁）",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .kansai_tari:
-            InflectionDescription(short: "ーたり（関西弁）", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "ーたり（関西弁）",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .kansai_adj_te:
-            InflectionDescription(short: "adjーて（関西弁）", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "adjーて（関西弁）",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         case .kansai_adj_negative:
-            InflectionDescription(short: "adj-negative (関西弁)", description: .text(StringContent(content: "")))
+            InflectionDescription(
+                short: "adj-negative (関西弁)",
+                description: .array([
+                    [
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
+                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                        ]))
+                    ],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        ]))
+                    ]
+                ])
+            )
         }
     }
     
@@ -256,25 +1058,25 @@ public enum InflectionRule: String, Sendable, Identifiable {
     case nbakari = "ーんばかり"
     case ntosuru = "ーんとする"
     case mu = "ーむ"
-    case zaru = "ーざる" 
+    case zaru = "ーざる"
     case neba = "ーねば"
     case ku = "ーく"
     case imperative = "imperative"
     case continuative = "continuative"
-    case sa = "ーさ" 
-    case passive = "passive" 
+    case sa = "ーさ"
+    case passive = "passive"
     case potential = "potential"
     case potential_passive = "potential or passive"
     case volitional = "volitional"
-    case volitional_slang = "volitional slang" 
-    case mai = "ーまい" 
+    case volitional_slang = "volitional slang"
+    case mai = "ーまい"
     case oku = "ーおく"
     case ki = "ーき"
-    case ge = "ーげ" 
-    case garu = "ーがる" 
-    case e = "ーえ" 
-    case n_slang = "ーんな" 
-    case imperative_negative_slang = "imperative negative slang" 
+    case ge = "ーげ"
+    case garu = "ーがる"
+    case e = "ーえ"
+    case n_slang = "ーんな"
+    case imperative_negative_slang = "imperative negative slang"
     case kansai_negative = "関西弁 negative" //
     case kansai_te = "関西弁　ーて" //
     case kansai_ta = "関西弁　ーた" //
