@@ -386,38 +386,43 @@ public enum InflectionRule: String, Sendable, Identifiable {
             InflectionDescription(
                 short: "short-causative",
                 description: .array([
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Contraction of the causative form.")), tag: "span", font: .body))],
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Describes the intention to make someone do something."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach さす to the irrealis form (未然形) of ichidan (一段) verbs."))],
+                            [.text(StringContent(content: "Attach す to the irrealis form (未然形) of godan (五段) verbs."))],
+                            [.text(StringContent(content: "する becomes さす."))],
+                            [.text(StringContent(content: "くる becomes こさす."))],
+                            [.text(StringContent(content: "It itself conjugates as an godan (五段) verb."))],
                         ]))
                     ]
                 ])
-            )
+            ) // ok
         case .tai:
             InflectionDescription(
                 short: "ーたい",
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Expresses the feeling of desire or hope."))],
+                            [.text(StringContent(content: "Used in ...たいと思います, an indirect way of saying what the speaker intends to do."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach たい to the continuative form (連用形) of verbs."))],
+                            [.text(StringContent(content: "たい itself conjugates as i-adjective."))],
                         ]))
                     ]
                 ])
-            )
+            ) // ok
         case .tara:
             InflectionDescription(
                 short: "ーたら",
