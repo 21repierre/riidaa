@@ -14,7 +14,7 @@ struct MangaReaderParserView: View {
     @State var selectedElement: Int?
     @State var loading = false
     
-    @State private var inflectionDescription: InflectionDescription? //= InflectionRule.ya.description
+    @State private var inflectionDescription: InflectionDescription? //= InflectionRule.continuative.description
     
     var body: some View {
         ZStack {

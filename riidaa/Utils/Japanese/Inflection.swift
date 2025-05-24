@@ -29,6 +29,7 @@ public enum WordType: String, Sendable, CaseIterable {
     case nasai_form
     case ta_form
     case masen_form
+    case n_form
     case ku_form
     
     static let childrenMap: [WordType: [WordType]] = [
@@ -429,14 +430,15 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Denotes the latter stated event is a continuation of the previous stated event."))],
+                            [.text(StringContent(content: "Assumes that a matter has been completed or concluded."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach たら to the continuative form (連用形) of verbs after euphonic change form."))],
+                            [.text(StringContent(content: "Attach かったら to the stem of i-adjectives."))],
                         ]))
                     ]
                 ])
@@ -447,14 +449,15 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Shows two actions occurring back and forth (when used with two verbs)."))],
+                            [.text(StringContent(content: "Shows examples of actions and states (when used with multiple verbs and adjectives)."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach たり to the continuative form (連用形) of verbs after euphonic change form."))],
+                            [.text(StringContent(content: "Attach かったり to the stem of i-adjectives."))],
                         ]))
                     ]
                 ])
@@ -465,14 +468,14 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Negative form of verbs."))],
+                            [.text(StringContent(content: "Continuative form (連用形) of the particle ぬ (nu)."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach ず to the irrealis form (未然形) of verbs."))],
                         ]))
                     ]
                 ])
@@ -483,14 +486,14 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Negative form of verbs."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach ぬ to the irrealis form (未然形) of verbs."))],
+                            [.text(StringContent(content: "する becomes せぬ."))],
                         ]))
                     ]
                 ])
@@ -501,14 +504,14 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Negative form of verbs; a sound change of ぬ."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach ん to the irrealis form (未然形) of verbs."))],
+                            [.text(StringContent(content: "する becomes せん."))],
                         ]))
                     ]
                 ])
@@ -519,14 +522,14 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Shows an action or condition is on the verge of occurring, or an excessive/extreme degree."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach んばかり to the irrealis form (未然形) of verbs."))],
+                            [.text(StringContent(content: "する becomes せんばかり."))],
                         ]))
                     ]
                 ])
@@ -537,14 +540,15 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Shows the speaker's will or intention."))],
+                            [.text(StringContent(content: "Shows an action or condition is on the verge of occurring."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach んとする to the irrealis form (未然形) of verbs."))],
+                            [.text(StringContent(content: "する becomes せんとする."))],
                         ]))
                     ]
                 ])
@@ -553,16 +557,18 @@ public enum InflectionRule: String, Sendable, Identifiable {
             InflectionDescription(
                 short: "ーむ",
                 description: .array([
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Archaic.")), tag: "span", font: .body))],
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Shows an inference of a certain matter."))],
+                            [.text(StringContent(content: "Shows speaker's intention."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach む to the irrealis form (未然形) of verbs."))],
+                            [.text(StringContent(content: "する becomes せむ."))],
                         ]))
                     ]
                 ])
@@ -573,14 +579,14 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Negative form of verbs."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach ざる to the irrealis form (未然形) of verbs."))],
+                            [.text(StringContent(content: "する becomes せざる."))],
                         ]))
                     ]
                 ])
@@ -591,14 +597,15 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Shows a hypothetical negation; if not ..."))],
+                            [.text(StringContent(content: "Shows a must. Used with or without ならぬ."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach ねば to the irrealis form (未然形) of verbs."))],
+                            [.text(StringContent(content: "する becomes せねば."))],
                         ]))
                     ]
                 ])
@@ -609,16 +616,9 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Adverbial form of i-adjectives."))],
                         ]))
                     ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
                 ])
             )
         case .imperative:
@@ -627,16 +627,18 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "To give orders."))],
+                            [.text(StringContent(content: "(As あれ) Represents the fact that it will never change no matter the circumstances."))],
+                            [.text(StringContent(content: "Express a feeling of hope."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
+//                    [
+//                        .list(StructuredContentList(content: [
+//                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+//                        ]))
+//                    ]
+                    // TODO
                 ])
             )
         case .continuative:
@@ -645,16 +647,16 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Used to indicate actions that are (being) carried out."))],
                         ]))
                     ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Refers to 連用形, the part of the verb after conjugating with -ます and dropping ます")), tag: "span", font: .body))],
+//                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+//                    [
+//                        .list(StructuredContentList(content: [
+//                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+//                        ]))
+//                    ]
                 ])
             )
         case .sa:
@@ -663,32 +665,31 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Nominalizing suffix of i-adjectives indicating nature, state, mind or degree."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach さ to the stem of i-adjectives."))],
                         ]))
                     ]
                 ])
-            )
+            ) // ok
         case .passive:
             InflectionDescription(
                 short: "passive",
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Indicates an action received from an action performer."))],
+                            [.text(StringContent(content: "Expresses respect for the subject of action performer."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach れる to the irrealis form (未然形) of godan verbs."))],
                         ]))
                     ]
                 ])
@@ -699,14 +700,16 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Indicates a state of being (naturally) capable of doing an action."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach (ら)れる to the irrealis form (未然形) of ichidan verbs."))],
+                            [.text(StringContent(content: "Attach る to the imperative form (命令形) of godan verbs."))],
+                            [.text(StringContent(content: "する becomes できる."))],
+                            [.text(StringContent(content: "くる becomes こ(ら)れる."))],
                         ]))
                     ]
                 ])
@@ -717,14 +720,17 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Indicates an action received from an action performer."))],
+                            [.text(StringContent(content: "Expresses respect for the subject of action performer."))],
+                            [.text(StringContent(content: "Indicates a state of being (naturally) capable of doing an action."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach られる to the irrealis form (未然形) of ichidan verbs."))],
+                            [.text(StringContent(content: "する becomes せられる."))],
+                            [.text(StringContent(content: "くる becomes こられる."))],
                         ]))
                     ]
                 ])
@@ -735,14 +741,18 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Expresses speaker's will or intention."))],
+                            [.text(StringContent(content: "Expresses an invitation to the other party."))],
+                            [.text(StringContent(content: "(Used in …ようとする) Indicates being on the verge of initiating an action or transforming a state."))],
+                            [.text(StringContent(content: "Indicates an inference of a matter."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach よう to the irrealis form (未然形) of ichidan verbs."))],
+                            [.text(StringContent(content: "Attach う to the irrealis form (未然形) of godan verbs after -o euphonic change form."))],
+                            [.text(StringContent(content: "Attach かろう to the stem of i-adjectives (4th meaning only)."))],
                         ]))
                     ]
                 ])
@@ -753,14 +763,14 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Expresses speaker's will or intention."))],
+                            [.text(StringContent(content: "Expresses an invitation to the other party."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Replace final う of volitional form with っ then add か (よう → よっか)."))],
                         ]))
                     ]
                 ])
@@ -769,16 +779,20 @@ public enum InflectionRule: String, Sendable, Identifiable {
             InflectionDescription(
                 short: "ーまい",
                 description: .array([
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Negative volitional form of verbs")), tag: "span", font: .body))],
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Expresses speaker's assumption that something is likely not true."))],
+                            [.text(StringContent(content: "Expresses speaker's will or intention not to do something."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach まい to the dictionary form (終止形) of verbs."))],
+                            [.text(StringContent(content: "Attach まい to the irrealis form (未然形) of ichidan verbs."))],
+                            [.text(StringContent(content: "する becomes しまい."))],
+                            [.text(StringContent(content: "くる becomes こまい."))],
                         ]))
                     ]
                 ])
@@ -789,14 +803,15 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "To do certain things in advance in preparation (or in anticipation) of latter needs."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach おく to the て-form of verbs."))],
+                            [.text(StringContent(content: "Attach でおく after ない negative form of verbs."))],
+                            [.text(StringContent(content: "Contracts to とく・どく in speech."))],
                         ]))
                     ]
                 ])
@@ -805,18 +820,7 @@ public enum InflectionRule: String, Sendable, Identifiable {
             InflectionDescription(
                 short: "ーき",
                 description: .array([
-                    [
-                        .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
-                        ]))
-                    ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Attributive form (連体形) of i-adjectives. An archaic form that remains in modern Japanese")), tag: "span", font: .body))],
                 ])
             )
         case .ge:
@@ -825,14 +829,13 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Describes a person's appearance. Shows feelings of the person."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach げ or 気 to the stem of i-adjectives."))],
                         ]))
                     ]
                 ])
@@ -843,14 +846,15 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Shows subject’s feelings contrast with what is thought/known about them."))],
+                            [.text(StringContent(content: "Indicates subject's behavior (stands out)."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "Attach がる to the stem of i-adjectives."))],
+                            [.text(StringContent(content: "It itself conjugates as a godan verb."))],
                         ]))
                     ]
                 ])
@@ -859,16 +863,18 @@ public enum InflectionRule: String, Sendable, Identifiable {
             InflectionDescription(
                 short: "ーえ",
                 description: .array([
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Slang")), tag: "span", font: .body))],
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "A sound change of i-adjectives."))],
                         ]))
                     ],
                     [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
                     [
                         .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                            [.text(StringContent(content: "ai：やばい → やべぇ."))],
+                            [.text(StringContent(content: "ui：さむい → さみぃ/さめぇ."))],
+                            [.text(StringContent(content: "oi：すごい → すげぇ."))],
                         ]))
                     ]
                 ])
@@ -877,36 +883,19 @@ public enum InflectionRule: String, Sendable, Identifiable {
             InflectionDescription(
                 short: "ーん-slang",
                 description: .array([
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Slang")), tag: "span", font: .body))],
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Sound change of r-column syllables to n (when before an n-sound, usually の or な)."))],
                         ]))
                     ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
                 ])
             )
         case .imperative_negative_slang:
             InflectionDescription(
                 short: "imperative-negative-slang",
                 description: .array([
-                    [
-                        .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
-                        ]))
-                    ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Imperative negative slang")), tag: "span", font: .body))],
                 ])
             )
         case .kansai_negative:
@@ -915,16 +904,16 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Negative form of kansai-ben verbs."))],
                         ]))
                     ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
+//                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+//                    [
+//                        .list(StructuredContentList(content: [
+//                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+//                        ]))
+//                    ]
+                    // TODO
                 ])
             )
         case .kansai_te:
@@ -933,16 +922,15 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "ーて form of kansai-ben verbs."))],
                         ]))
                     ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
+//                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+//                    [
+//                        .list(StructuredContentList(content: [
+//                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+//                        ]))
+//                    ]
                 ])
             )
         case .kansai_ta:
@@ -951,16 +939,15 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "ーた form of kansai-ben terms."))],
                         ]))
                     ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
+//                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+//                    [
+//                        .list(StructuredContentList(content: [
+//                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+//                        ]))
+//                    ]
                 ])
             )
         case .kansai_tara:
@@ -969,16 +956,15 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "ーたら form of kansai-ben terms."))],
                         ]))
                     ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
+//                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+//                    [
+//                        .list(StructuredContentList(content: [
+//                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+//                        ]))
+//                    ]
                 ])
             )
         case .kansai_tari:
@@ -987,16 +973,32 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "ーたり form of kansai-ben terms."))],
                         ]))
                     ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+//                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+//                    [
+//                        .list(StructuredContentList(content: [
+//                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+//                        ]))
+//                    ]
+                ])
+            )
+        case .kansai_ku:
+            InflectionDescription(
+                short: "ーく（関西弁）",
+                description: .array([
                     [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+                        .numberedList(StructuredContentList(content: [
+                            [.text(StringContent(content: "ーく stem of kansai-ben adjectives."))],
                         ]))
-                    ]
+                    ],
+//                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+//                    [
+//                        .list(StructuredContentList(content: [
+//                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+//                        ]))
+//                    ]
                 ])
             )
         case .kansai_adj_te:
@@ -1005,16 +1007,15 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "ーて form of kansai-ben adjectives."))],
                         ]))
                     ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
+//                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+//                    [
+//                        .list(StructuredContentList(content: [
+//                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+//                        ]))
+//                    ]
                 ])
             )
         case .kansai_adj_negative:
@@ -1023,16 +1024,15 @@ public enum InflectionRule: String, Sendable, Identifiable {
                 description: .array([
                     [
                         .numberedList(StructuredContentList(content: [
-                            [.text(StringContent(content: "Conditional form; shows that the previous stated condition's establishment is the condition for the latter stated condition to occur."))],
-                            [.text(StringContent(content: "Shows a trigger for a latter stated perception or judgment."))],
+                            [.text(StringContent(content: "Negative form of kansai-ben adjectives."))],
                         ]))
                     ],
-                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
-                    [
-                        .list(StructuredContentList(content: [
-                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
-                        ]))
-                    ]
+//                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+//                    [
+//                        .list(StructuredContentList(content: [
+//                            [.text(StringContent(content: "Attach ば to the hypothetical form (仮定形) of verbs and i-adjectives."))],
+//                        ]))
+//                    ]
                 ])
             )
         }
@@ -1087,6 +1087,7 @@ public enum InflectionRule: String, Sendable, Identifiable {
     case kansai_ta = "関西弁　ーた" //
     case kansai_tara = "関西弁　ーたら" //
     case kansai_tari = "関西弁　ーたり" //
+    case kansai_ku = "関西弁 ーく" //
     case kansai_adj_te = "関西弁 adjective ーて" //
     case kansai_adj_negative = "関西弁 adjective negative" //
     
