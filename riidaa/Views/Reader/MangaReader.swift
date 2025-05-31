@@ -10,6 +10,8 @@ import LazyPager
 
 public struct MangaReader: View {
     
+    @Environment(\.dismiss) var dismiss
+    
     @Binding var volume: MangaVolumeModel
     @State var currentPage: Int
     
@@ -69,6 +71,25 @@ public struct MangaReader: View {
     }
     
     public var body: some View {
+        ZStack {
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .scaleEffect(1.2)
+                    Text("\(volume.manga.title)")
+                        .frame(maxWidth: UIScreen.main.bounds.width / 3 - 20, alignment: .leading)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                .padding(.leading, 10)
+                Spacer()
+            }
+
+            Text("\(currentPage + 1)/\(volume.pages.count)")
+                .font(.headline)
+        }
         GeometryReader { mainGeom in
             let minHeight = min(mainGeom.size.height * 0.2, mainGeom.size.height - pageHeight)
             let maxHeight = mainGeom.size.height * 0.8
@@ -194,7 +215,7 @@ public struct MangaReader: View {
 
 #Preview {
     MangaReader(volume: .init(get: {
-        CoreDataManager.sampleVolume
+        CoreDataManager.sampleManga.volumes[0] as! MangaVolumeModel
     }, set: { _ in }), currentPage: 0)
     .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
 }

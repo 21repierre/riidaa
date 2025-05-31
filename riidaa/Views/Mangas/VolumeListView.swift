@@ -23,11 +23,20 @@ struct VolumeListView: View {
         return processingStatus == ProcessingStatus.STARTED
     }
     
+    @State private var readingVolume: MangaVolumeModel? = nil
+    
     var body: some View {
         ScrollView {
             // TODO: word tracker
             ForEach((manga.volumes.array as! [MangaVolumeModel]).sorted()) { volume in
-                VolumeComponent(volume: volume)
+                Button {
+                    readingVolume = volume
+                } label: {
+                    VolumeComponent(volume: volume)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal)
+                .padding(.vertical, 5)
             }
         }
         .navigationTitle(manga.title)
@@ -66,6 +75,9 @@ struct VolumeListView: View {
         }.onAppear(perform: {
             print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("mangas"))
         })
+        .fullScreenCover(item: $readingVolume) { v in
+            MangaReader(volume: .constant(v), currentPage: Int(v.lastReadPage))
+        }
     }
 }
 
