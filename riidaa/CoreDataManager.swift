@@ -24,6 +24,13 @@ class CoreDataManager: ObservableObject {
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }
+        container.viewContext.automaticallyMergesChangesFromParent = true
+        if let description = container.persistentStoreDescriptions.first {
+            description.shouldMigrateStoreAutomatically = true
+            description.shouldInferMappingModelAutomatically = false
+        }
+
+        
         container.loadPersistentStores { _, error in
             if let error = error {
                 fatalError("リーダー Core Data failed to load: \(error)")

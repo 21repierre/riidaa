@@ -18,7 +18,8 @@ extension MangaModel {
     }    
     
     @NSManaged public var cover: Data?
-    @NSManaged public var id: Int64
+    @NSManaged public var id: UUID
+    @NSManaged public var anilist_id: NSNumber?
     @NSManaged public var title: String
     @NSManaged public var volumes: NSOrderedSet
 
@@ -90,11 +91,11 @@ extension MangaModel {
         
     }
     
-    static func fetchMangaIDs(moc: NSManagedObjectContext) -> Set<Int64> {
+    static func fetchMangaAnilistIDs(moc: NSManagedObjectContext) -> Set<Int64> {
         let fetchRequest: NSFetchRequest<MangaModel> = MangaModel.fetchRequest()
         do {
             let mangas = try moc.fetch(fetchRequest)
-            return Set(mangas.map { $0.id })
+            return Set(mangas.compactMap { $0.anilist_id?.int64Value })
         } catch {
             print("Error fetching mangas: \(error)")
             return []
@@ -112,7 +113,7 @@ extension CoreDataManager {
     
     static var sampleManga: MangaModel {
         let manga = MangaModel(context: CoreDataManager.shared.container.viewContext)
-        manga.id = 2
+        manga.id = UUID()
         manga.title = "This is another manga with a long title"
         manga.insertIntoVolumes(CoreDataManager.sampleVolume, at: 0)
         manga.insertIntoVolumes(CoreDataManager.sampleVolume, at: 1)

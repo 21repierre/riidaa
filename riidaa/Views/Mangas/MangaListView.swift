@@ -14,12 +14,21 @@ struct MangaListView: View {
     
     @State var showMangaAddView: Bool = false
     
+    @State var showRenameAlert: Bool = false
+    @State var mangaEdit: MangaModel? = nil
+    @State var newMangaName: String = ""
+    
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                     ForEach(mangas) { manga in
-                        MangaCover(manga: manga)
+                        MangaCover(
+                            manga: manga,
+                            showRenameAlert: $showRenameAlert,
+                            mangaEdit: $mangaEdit,
+                            newMangaName: $newMangaName
+                        )
                     }
                 }.padding()
             }.navigationTitle("Mangas")
@@ -34,18 +43,31 @@ struct MangaListView: View {
                     MangaAddView()
                 }
         }
+        .alert("test", isPresented: $showRenameAlert, actions: {
+            TextField("New manga name", text: $newMangaName)
+            Button("Cancel", role: .cancel) {}
+            Button {
+                let trimmed = newMangaName.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    mangaEdit?.title = trimmed
+                    CoreDataManager.shared.saveContext()
+                }
+            } label: {
+                Text("Save")
+            }
+        })
     }
     
 }
-
-//#Preview {
-//    MangaListView()
-//}
 
 struct MangaCover : View {
     
     @Environment(\.managedObjectContext) var moc
     @ObservedObject var manga: MangaModel
+    
+    @Binding var showRenameAlert: Bool
+    @Binding var mangaEdit: MangaModel?
+    @Binding var newMangaName: String
     
     var body: some View {
         NavigationLink(destination: VolumeListView(manga: manga)) {
@@ -90,6 +112,13 @@ struct MangaCover : View {
                     CoreDataManager.shared.saveContext()
                 } label: {
                     Label("Delete manga", systemImage: "trash")
+                }
+                Button {
+                    showRenameAlert = true
+                    mangaEdit = manga
+                    newMangaName = manga.title
+                } label: {
+                    Label("Rename manga", systemImage: "pencil")
                 }
             }
         }

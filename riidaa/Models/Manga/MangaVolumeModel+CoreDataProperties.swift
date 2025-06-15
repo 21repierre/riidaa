@@ -62,6 +62,31 @@ extension MangaVolumeModel {
         return nil
     }
     
+    func changeVolumeNumber(newNumber: Int64) {
+        let fileManager = FileManager.default
+        let baseDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let mangaDirName: String
+
+        if let anilistId = self.manga.anilist_id, anilistId != 0 {
+            mangaDirName = String(anilistId.intValue)
+        } else {
+            mangaDirName = self.manga.id.uuidString
+        }
+
+        let mangaDir = baseDir
+            .appendingPathComponent("mangas")
+            .appendingPathComponent(mangaDirName)
+        let volumeDir = mangaDir.appendingPathComponent(String(self.number))
+        let newVolumeDir = mangaDir.appendingPathComponent(String(newNumber))
+        
+        do {
+            try fileManager.moveItem(at: volumeDir, to: newVolumeDir)
+            self.number = newNumber
+        } catch {
+            print("Failed to change volume number: \(error.localizedDescription)")
+        }
+    }
+    
 }
 
 extension MangaVolumeModel : Identifiable, Comparable {

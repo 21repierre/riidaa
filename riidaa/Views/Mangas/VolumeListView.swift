@@ -25,6 +25,9 @@ struct VolumeListView: View {
     
     @State private var readingVolume: MangaVolumeModel? = nil
     
+    @State private var editVolume: MangaVolumeModel? = nil
+    @State private var editVolumeNumber: String = ""
+    
     var body: some View {
         ScrollView {
             // TODO: word tracker
@@ -37,6 +40,20 @@ struct VolumeListView: View {
                 .buttonStyle(PlainButtonStyle())
                 .padding(.horizontal)
                 .padding(.vertical, 5)
+                .contextMenu {
+                    Button(role: .destructive) {
+                        moc.delete(volume)
+                        CoreDataManager.shared.saveContext()
+                    } label: {
+                        Label("Delete volume", systemImage: "trash")
+                    }
+                    Button {
+                        editVolume = volume
+                        editVolumeNumber = String(volume.number)
+                    } label: {
+                        Label("Edit volume number", systemImage: "pencil")
+                    }
+                }
             }
         }
         .navigationTitle(manga.title)
@@ -78,6 +95,25 @@ struct VolumeListView: View {
         .fullScreenCover(item: $readingVolume) { v in
             MangaReader(volume: .constant(v), currentPage: Int(v.lastReadPage))
         }
+        .alert("Edit volume", isPresented: .init(get: {editVolume != nil}, set: { v in
+            if !v {
+                editVolume = nil
+            }
+        }), actions: {
+            TextField("New Volume Number", text: $editVolumeNumber)
+                            .keyboardType(.numberPad)
+            Button("Cancel", role: .cancel) {
+                editVolume = nil
+            }
+            Button("OK") {
+                if let newNumber = Int64(editVolumeNumber.trimmingCharacters(in: .whitespacesAndNewlines)),
+                   newNumber > 0 {
+                    editVolume?.changeVolumeNumber(newNumber: newNumber)
+                    CoreDataManager.shared.saveContext()
+                }
+                editVolume = nil
+            }
+        })
     }
 }
 
@@ -98,9 +134,16 @@ extension VolumeListView {
                 try fileManager.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
                 try fileManager.unzipItem(at: path, to: tempDirectory)
                 
-                let extractedItems = try fileManager.contentsOfDirectory(at: tempDirectory, includingPropertiesForKeys: nil)
+                var extractedItems = try fileManager.contentsOfDirectory(at: tempDirectory, includingPropertiesForKeys: nil).filter { $0.lastPathComponent != "__MACOSX" }
+                                 
+                if extractedItems.count == 1,
+                   fileManager.isDirectory(at: extractedItems[0]) {
+                    let nestedFolder = extractedItems[0]
+                    extractedItems = try fileManager.contentsOfDirectory(at: nestedFolder, includingPropertiesForKeys: nil)
+                }
+                
                 let mokuroFile = extractedItems.first { $0.pathExtension == "mokuro" }
-                let imagesFolder = extractedItems.first { fileManager.isDirectory(at: $0) }
+                let imagesFolder = extractedItems.first { $0.lastPathComponent != "_ocr" && fileManager.isDirectory(at: $0) }
                 
                 defer {
                     try? fileManager.removeItem(at: tempDirectory)
@@ -118,11 +161,25 @@ extension VolumeListView {
                       let titleName = mokuroJson["title"] as? String else {
                     throw NSError(domain: "VolumeProcessing", code: 3, userInfo: [NSLocalizedDescriptionKey: "Missing 'volume' or 'title' in mokuro"])
                 }
-                
-                let v1 = volumeName.replacingOccurrences(of: titleName, with: "").dropFirst(2)
-                guard let volumeNumber = Int64(v1) else {
-                    throw NSError(domain: "VolumeProcessing", code: 4, userInfo: [NSLocalizedDescriptionKey: "Invalid volume number: \(v1)"])
+
+                // Try to extract the first integer found in volumeName
+                let volumeNum: Int64?
+
+                // Use regex to find the first sequence of digits in volumeName
+                if let range = volumeName.range(of: "\\d+", options: .regularExpression) {
+                    let numberString = String(volumeName[range])
+                    volumeNum = Int64(numberString)
+                } else {
+                    // Fallback: your original logic if regex fails
+                    let v1 = volumeName.replacingOccurrences(of: titleName, with: "").dropFirst(2)
+                    volumeNum = Int64(v1)
                 }
+
+                guard let volumeNumber = volumeNum else {
+                    throw NSError(domain: "VolumeProcessing", code: 4, userInfo: [NSLocalizedDescriptionKey: "Invalid volume number in: \(volumeName)"])
+                }
+
+                
                 print("Volume number \(volumeNumber)")
                 for vol in manga.volumes.array as! [MangaVolumeModel] {
                     if vol.number == volumeNumber {
@@ -141,7 +198,8 @@ extension VolumeListView {
                 self.processingProgressMax = pages.count
                 
                 let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("mangas")
-                let volumeDirectory = documents.appendingPathComponent(String(manga.id)).appendingPathComponent(String(newVolume.number))
+                let volumeDirectory = documents.appendingPathComponent(manga.id.uuidString).appendingPathComponent(String(newVolume.number))
+
                 try fileManager.createDirectory(at: volumeDirectory, withIntermediateDirectories: true)
                 
                 for (i, page) in pages.enumerated() {
@@ -152,7 +210,6 @@ extension VolumeListView {
                     }
                     let img = imagesFolder.appendingPathComponent(img_path)
                     let destImg = volumeDirectory.appendingPathComponent(img_path)
-//                    print(destImg)
                     try? fileManager.removeItem(at: destImg)
                     try fileManager.moveItem(at: img, to: destImg)
                     

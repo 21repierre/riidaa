@@ -55,7 +55,7 @@ struct MangaAddView: View {
                             .padding(.top, 20)
                     }
                     .frame(maxWidth: .infinity, minHeight: 150)
-                } else if searchMangasList.isEmpty {
+                } else if searchMangasList.isEmpty && mangaTitle == "" {
                     VStack {
                         Image(systemName: "book.closed")
                         //                            .font(.largeTitle)
@@ -68,7 +68,7 @@ struct MangaAddView: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 150)
                 } else {
-                    MangaAddResultView(searchMangasList: $searchMangasList)
+                    MangaAddResultView(searchMangasList: $searchMangasList, title: $mangaTitle)
                 }
             }
             
@@ -86,7 +86,7 @@ struct MangaAddView: View {
             switch result {
             case .success(let data):
                 if let medias = data.data?.page?.media {
-                    let mangaIDs = MangaModel.fetchMangaIDs(moc: moc)
+                    let mangaIDs = MangaModel.fetchMangaAnilistIDs(moc: moc)
                     
                     self.searchMangasList = medias.compactMap({ media in
                         guard let id = media?.id, !mangaIDs.contains(Int64(id)) else {

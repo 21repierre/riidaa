@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 class MangaResultModel : Identifiable {
     var id: Int64
@@ -22,20 +23,52 @@ class MangaResultModel : Identifiable {
 struct MangaAddResultView : View {
     
     @Binding var searchMangasList: [MangaResultModel]
+    @Binding var title: String
+    
     @Environment(\.dismiss) var dismiss
     @Environment(\.managedObjectContext) var moc
+    
+    @State var customImage: PhotosPickerItem? = nil
     
     let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
     
     var body: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 8) {
+                PhotosPicker(
+                    selection: $customImage,
+                    matching: .images,
+                    photoLibrary: .shared()
+                ) {
+                    VStack(alignment: .leading,spacing: 0) {
+                        Image(systemName: "book")
+                            .scaleEffect(2)
+                            .foregroundColor(.gray)
+                            .frame(width: 110, height: 170)
+                            .background(Color(.systemGray3))
+                            .cornerRadius(10)
+                        
+                        
+                        VStack() {
+                            Text("Create title")
+                                .font(.callout)
+                                .foregroundColor(.primary)
+                                .lineLimit(2)
+                                .truncationMode(.tail)
+                            Spacer()
+                        }
+                        .frame(height: 49)
+                        .padding(.top, 7)
+                        .padding([.leading, .trailing], 1)
+                    }
+                }
                 ForEach($searchMangasList) { manga in
                     Button(action: {
                         let newManga = MangaModel(
                             context: self.moc
                         )
-                        newManga.id = manga.id
+                        newManga.id = UUID()
+                        newManga.anilist_id = manga.id as NSNumber
                         newManga.title = manga.title.wrappedValue
                         newManga.downloadCover(url: manga.wrappedValue.coverImage, completion: { result in
                             if result {
@@ -79,15 +112,29 @@ struct MangaAddResultView : View {
                                 Spacer()
                             }
                             .frame(height: 49)
-                                .padding(.top, 7)
-                                .padding([.leading, .trailing], 1)
-//                                .border(.green)
+                            .padding(.top, 7)
+                            .padding([.leading, .trailing], 1)
+                            //                                .border(.green)
                         }
                         .frame(height: 226)
-//                        .border(.blue)
+                        //                        .border(.blue)
                     }
                 }
             }.padding()
+        }
+        .onChange(of: customImage) { value in
+            Task {
+                if let value = value {
+                    if let data = try? await value.loadTransferable(type: Data.self) {
+                        let newManga = MangaModel(context: self.moc)
+                        newManga.id = UUID()
+                        newManga.title = self.title
+                        newManga.cover = data
+                        CoreDataManager.shared.saveContext()
+                        dismiss()
+                    }
+                }
+            }
         }
     }
     
@@ -96,7 +143,8 @@ struct MangaAddResultView : View {
     
     private func addManga(manga: MangaResultModel) {
         let newManga = MangaModel(context: self.moc)
-        newManga.id = manga.id
+        newManga.id = UUID()
+        newManga.anilist_id = manga.id as NSNumber
         newManga.title = manga.title
         newManga.downloadCover(url: manga.coverImage) { result in
             if result {
@@ -124,7 +172,7 @@ struct MangaAddResultView : View {
         MangaResultModel(id: 30101, title: "ONE PIECE", coverImage: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx30013-ulXvn0lzWvsz.jpg"),
         MangaResultModel(id: 36014, title: "わんぴいす", coverImage: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx95552-UbNjuCvgmBBM.jpg"),
         MangaResultModel(id: 39005, title: "ONE PIECE episode A", coverImage: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx117802-CsCjUyuG4lSB.jpg"),
-    ]))
+    ]), title: .constant("test"))
     .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
     
 }
