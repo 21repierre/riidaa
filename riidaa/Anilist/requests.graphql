@@ -1,6 +1,23 @@
 
 query MangaSearchQuery($page: Int, $search: String) {
   Page(page: $page) {
+    media(search: $search, type: MANGA, isAdult: false) {
+      id
+      title {
+        romaji
+        english
+        native
+      }
+      coverImage {
+        large
+      }
+    }
+  }
+}
+
+
+query MangaSearchQueryAdult($page: Int, $search: String) {
+  Page(page: $page) {
     media(search: $search, type: MANGA) {
       id
       title {

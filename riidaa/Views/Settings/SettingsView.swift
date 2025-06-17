@@ -9,6 +9,9 @@ import SwiftUI
 
 struct SettingsView: View {
     
+    @EnvironmentObject var settings: SettingsModel
+    @Environment(\.openURL) var openURL
+    
     var body: some View {
         NavigationStack {
             List {
@@ -19,22 +22,79 @@ struct SettingsView: View {
                     NavigationLink(destination: ReaderSettings()) {
                         Text("Reader Settings")
                     }
+                    Toggle("Enable adult content", isOn: settings.$adult)
                 }
                 .listRowBackground(Color(.systemGray6))
                 
                 Section(header: Text("About")) {
-//                    NavigationLink(destination: CreditsView()) {
-//                        Text("Credits")
-//                    }
-//                    NavigationLink(destination: LicensesView()) {
-//                        Text("Licenses")
-//                    }
+                    HStack {
+                        Text("Version")
+                        Spacer()
+                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
+                            .foregroundColor(.secondary)
+                    }
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("You can contact me on:")
+
+                        HStack(spacing: 10) {
+                            Image(systemName: "link")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                                .foregroundColor(.blue)
+                            Text("GitHub")
+                                .font(.body)
+                                .foregroundColor(.blue)
+                        }
+                        .onTapGesture {
+                            openURL(URL(string: "https://github.com/21repierre/riidaa")!)
+                        }
+
+                        HStack(spacing: 10) {
+                            Image(systemName: "bubble.left.and.bubble.right")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                                .foregroundColor(.blue)
+                            Text("Discord")
+                                .font(.body)
+                                .foregroundColor(.blue)
+                        }
+                        .onTapGesture {
+                            openURL(URL(string: "https://discordapp.com/users/250301061435228160")!)
+                        }
+
+                        HStack(spacing: 10) {
+                            Image(systemName: "envelope")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                                .foregroundColor(.blue)
+                            Text("Email")
+                                .font(.body)
+                                .foregroundColor(.blue)
+                        }
+                        .onTapGesture {
+                            openURL(URL(string: "mailto:riidaa@repierre.dev")!)
+                        }
+                    }
+
+
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("This app’s reader feature is inspired by the open-source project Yomitan.")
+                            .font(.body)
+                        
+                        Link("View Yomitan on GitHub", destination: URL(string: "https://github.com/yomidevs/yomitan")!)
+                    }
+                    .padding(.vertical, 4)
+                    
                 }
             }
             .navigationTitle("Settings")
             .listStyle(.insetGrouped)
-            .background(.background) 
-            .scrollContentBackground(.hidden) 
+            .background(.background)
+            .scrollContentBackground(.hidden)
         }
     }
     

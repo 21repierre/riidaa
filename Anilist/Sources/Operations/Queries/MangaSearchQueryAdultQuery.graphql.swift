@@ -3,11 +3,11 @@
 
 @_exported import ApolloAPI
 
-public class MangaSearchQuery: GraphQLQuery {
-  public static let operationName: String = "MangaSearchQuery"
+public class MangaSearchQueryAdultQuery: GraphQLQuery {
+  public static let operationName: String = "MangaSearchQueryAdult"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query MangaSearchQuery($page: Int, $search: String) { Page(page: $page) { __typename media(search: $search, type: MANGA, isAdult: false) { __typename id title { __typename romaji english native } coverImage { __typename large } } } }"#
+      #"query MangaSearchQueryAdult($page: Int, $search: String) { Page(page: $page) { __typename media(search: $search, type: MANGA) { __typename id title { __typename romaji english native } coverImage { __typename large } } } }"#
     ))
 
   public var page: GraphQLNullable<Int>
@@ -49,8 +49,7 @@ public class MangaSearchQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("media", [Medium?]?.self, arguments: [
           "search": .variable("search"),
-          "type": "MANGA",
-          "isAdult": false
+          "type": "MANGA"
         ]),
       ] }
 

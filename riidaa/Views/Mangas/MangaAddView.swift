@@ -17,6 +17,8 @@ struct MangaAddView: View {
     @FocusState private var isTextFieldFocused: Bool
     @Environment(\.managedObjectContext) var moc
     
+    @EnvironmentObject var settings: SettingsModel
+    
     
     var body: some View {
         VStack {
@@ -82,27 +84,53 @@ struct MangaAddView: View {
     
     func searchMangas() {
         self.isSearching = true
-        Network.shared.apollo.fetch(query: MangaSearchQuery(page: 1, search: .some(mangaTitle))) { result in
-            switch result {
-            case .success(let data):
-                if let medias = data.data?.page?.media {
-                    let mangaIDs = MangaModel.fetchMangaAnilistIDs(moc: moc)
-                    
-                    self.searchMangasList = medias.compactMap({ media in
-                        guard let id = media?.id, !mangaIDs.contains(Int64(id)) else {
-                            return nil
-                        }
-                        return MangaResultModel(
-                            id: Int64(id),
-                            title: media?.title?.native ?? "",
-                            coverImage: media?.coverImage?.large ?? ""
-                        )
-                    })
+
+        if settings.adult {
+            Network.shared.apollo.fetch(query: MangaSearchQueryAdultQuery(page: 1, search: .some(mangaTitle))) { result in
+                switch result {
+                case .success(let data):
+                    if let medias = data.data?.page?.media {
+                        let mangaIDs = MangaModel.fetchMangaAnilistIDs(moc: moc)
+                        
+                        self.searchMangasList = medias.compactMap({ media in
+                            guard let id = media?.id, !mangaIDs.contains(Int64(id)) else {
+                                return nil
+                            }
+                            return MangaResultModel(
+                                id: Int64(id),
+                                title: media?.title?.native ?? "",
+                                coverImage: media?.coverImage?.large ?? ""
+                            )
+                        })
+                    }
+                case .failure(let err):
+                    print("error: \(err)")
                 }
-            case .failure(let err):
-                print("error: \(err)")
+                self.isSearching = false
             }
-            self.isSearching = false
+        } else {
+            Network.shared.apollo.fetch(query: MangaSearchQuery(page: 1, search: .some(mangaTitle))) { result in
+                switch result {
+                case .success(let data):
+                    if let medias = data.data?.page?.media {
+                        let mangaIDs = MangaModel.fetchMangaAnilistIDs(moc: moc)
+                        
+                        self.searchMangasList = medias.compactMap({ media in
+                            guard let id = media?.id, !mangaIDs.contains(Int64(id)) else {
+                                return nil
+                            }
+                            return MangaResultModel(
+                                id: Int64(id),
+                                title: media?.title?.native ?? "",
+                                coverImage: media?.coverImage?.large ?? ""
+                            )
+                        })
+                    }
+                case .failure(let err):
+                    print("error: \(err)")
+                }
+                self.isSearching = false
+            }
         }
     }
     

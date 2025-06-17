@@ -25,6 +25,8 @@ class SettingsModel: ObservableObject {
     
     @AppStorage("padding") var padding = 0.0
     
+    @AppStorage("adult") var adult = false
+    
     var backgroundColor: Binding<Color> {
         Binding<Color>(
             get: {
