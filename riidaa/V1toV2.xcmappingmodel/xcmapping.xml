@@ -5,7 +5,7 @@
     <databaseInfo>
         <version>134481920</version>
         <UUID>42249046-81FF-40B9-AD71-E7D90DED3DF7</UUID>
-        <nextObjectID>128</nextObjectID>
+        <nextObjectID>129</nextObjectID>
         <metadata>
             <plist version="1.0">
                 <dict>
@@ -66,7 +66,7 @@ cxIAAYagXxAPTlNLZXllZEFyY2hpdmVy0QAIAAlUcm9vdIABrxECrwALAAwAGQA1ADYANwBFAEYARwBI
         <attribute name="destinationname" type="string">MangaPageModel</attribute>
         <attribute name="autogenerateexpression" type="bool">1</attribute>
         <relationship name="mappingmodel" type="1/1" destination="XDDEVMAPPINGMODEL" idrefs="z102"></relationship>
-        <relationship name="attributemappings" type="0/0" destination="XDDEVATTRIBUTEMAPPING" idrefs="z111 z113 z107 z122"></relationship>
+        <relationship name="attributemappings" type="0/0" destination="XDDEVATTRIBUTEMAPPING" idrefs="z122 z107 z113 z111"></relationship>
         <relationship name="relationshipmappings" type="0/0" destination="XDDEVRELATIONSHIPMAPPING" idrefs="z104 z126"></relationship>
     </object>
     <object type="XDDEVRELATIONSHIPMAPPING" id="z104">
@@ -193,5 +193,8 @@ cxIAAYagXxAPTlNLZXllZEFyY2hpdmVy0QAIAAlUcm9vdIABrxECrwALAAwAGQA1ADYANwBFAEYARwBI
         <attribute name="autogenerateexpression" type="bool">1</attribute>
         <attribute name="name" type="string">manga</attribute>
         <relationship name="entitymapping" type="1/1" destination="XDDEVENTITYMAPPING" idrefs="z109"></relationship>
+    </object>
+    <object type="XDDEVATTRIBUTEMAPPING" id="z129">
+        <relationship name="entitymapping" type="1/1" destination="XDDEVENTITYMAPPING"></relationship>
     </object>
 </database>

@@ -26,6 +26,12 @@ struct SettingsView: View {
                 }
                 .listRowBackground(Color(.systemGray6))
                 
+                Section(header: Text("Stats")) {
+                    NavigationLink(destination: StatsView()) {
+                        Text("Stats")
+                    }
+                }
+                
                 Section(header: Text("About")) {
                     HStack {
                         Text("Version")

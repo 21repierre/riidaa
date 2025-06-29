@@ -24,6 +24,7 @@ class SettingsModel: ObservableObject {
     @AppStorage("borderSize") var borderSize = 1.0
     
     @AppStorage("padding") var padding = 0.0
+    @AppStorage("isLTR") var isLTR = false
     
     @AppStorage("adult") var adult = false
     

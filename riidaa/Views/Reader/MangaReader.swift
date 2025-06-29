@@ -12,6 +12,8 @@ public struct MangaReader: View {
     
     @Environment(\.dismiss) var dismiss
     
+    @EnvironmentObject var settings: SettingsModel
+    
     @Binding var volume: MangaVolumeModel
     @State var currentPage: Int
     
@@ -27,6 +29,11 @@ public struct MangaReader: View {
     @State private var parserOffset: CGFloat = 0
     @GestureState private var dragOffset: CGFloat = 0
     @State private var pageHeight = 0.0
+    
+    private var displayedPages: [MangaPageModel] {
+        settings.isLTR ? pages : pages.reversed()
+    }
+
     
     private var zoomGesture: some Gesture {
         if #available(iOS 17.0, *) {
@@ -67,8 +74,14 @@ public struct MangaReader: View {
     public init(volume: Binding<MangaVolumeModel>, currentPage: Int) {
         self._volume = volume
         self._currentPage = State(initialValue: currentPage)
-        self._pages = State(initialValue: volume.wrappedValue.pages.array as? [MangaPageModel] ?? [])
+        if let pages = volume.wrappedValue.pages.array as? [MangaPageModel] {
+            self._pages = State(initialValue: pages)
+        } else {
+            self._pages = State(initialValue: [])
+        }
+//        self._pages = State(initialValue: (volume.wrappedValue.pages.array as? [MangaPageModel] ?? []))
     }
+    
     
     public var body: some View {
         ZStack {
@@ -87,31 +100,31 @@ public struct MangaReader: View {
                 Spacer()
             }
 
-            Text("\(currentPage + 1)/\(volume.pages.count)")
+            Text("\(currentPage + 1)/\(displayedPages.count)")
                 .font(.headline)
         }
         GeometryReader { mainGeom in
-            let minHeight = min(mainGeom.size.height * 0.2, mainGeom.size.height - pageHeight)
+            let minHeight = min(mainGeom.size.height * 0.2, max(mainGeom.size.height * 0.1, mainGeom.size.height - pageHeight))
             let maxHeight = mainGeom.size.height * 0.8
             let tHeight1 = (maxHeight + minHeight)/3
             let tHeight2 = 2 * tHeight1
             
             ZStack(alignment: .bottom) {
                 TabView(selection: $currentPage) {
-                    ForEach(pages.indices, id: \.self) { index in
+                    ForEach(displayedPages.indices, id: \.self) { index in
                         GeometryReader { geometry in
-                            let scale = min(geometry.size.width / Double(pages[index].width),
-                                            geometry.size.height / Double(pages[index].height))
-                            let offsetY = Double(pages[index].height) * scale / 2
-                            let offsetX = Double(pages[index].width) * scale / 2
+                            let scale = min(geometry.size.width / Double(displayedPages[index].width),
+                                            geometry.size.height / Double(displayedPages[index].height))
+                            let offsetY = Double(displayedPages[index].height) * scale / 2
+                            let offsetX = Double(displayedPages[index].width) * scale / 2
                             ZStack {
-                                if abs(index - self.currentPage) <= 2 {
-                                    if let imageData = pages[index].getImage() {
+                                if abs(index - (settings.isLTR ? self.currentPage : displayedPages.count - self.currentPage)) <= 2 {
+                                    if let imageData = displayedPages[index].getImage() {
                                         Image(uiImage: imageData)
                                             .resizable()
                                             .scaledToFit()
                                     } else {
-                                        Text("Page \(index + 1) failed to load")
+                                        Text("Image \(displayedPages[index].number) failed to load")
                                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                                             .background(Color(.systemBackground))
                                             .foregroundColor(.primary)
@@ -121,13 +134,13 @@ public struct MangaReader: View {
                                         .resizable()
                                         .scaledToFit()
                                 }
-                                MangaReaderBoxes(boxes: pages[index].getBoxes(), scale: scale, offsetX: offsetX, offsetY: offsetY, currentLine: $currentLine)
+                                MangaReaderBoxes(boxes: displayedPages[index].getBoxes(), scale: scale, offsetX: offsetX, offsetY: offsetY, currentLine: $currentLine)
                             }
                             .frame(maxWidth: .infinity, alignment: .top)
                             .scaleEffect(pageZoom, anchor: pageZoomAnchor)
                             .offset(pageOffset)
                             .onAppear {
-                                pageHeight = Double(pages[index].height) * scale
+                                pageHeight = Double(displayedPages[index].height) * scale
                             }
                             .gesture(
                                 zoomGesture
@@ -158,6 +171,7 @@ public struct MangaReader: View {
                                 }
                             }
                         }
+                        .tag(Int(displayedPages[index].number))
                     }
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
@@ -168,6 +182,9 @@ public struct MangaReader: View {
                     pageInitialOffset = .zero
                     pageZoomAnchor = .center
                     self.currentLine = nil
+                    if displayedPages[currentPage].read_at == nil {
+                        displayedPages[currentPage].read_at = NSDate()
+                    }
                     volume.lastReadPage = Int64(newPage)
                     DispatchQueue.main.async {
                         CoreDataManager.shared.saveContext()
@@ -218,4 +235,5 @@ public struct MangaReader: View {
         CoreDataManager.sampleManga.volumes[0] as! MangaVolumeModel
     }, set: { _ in }), currentPage: 0)
     .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
+    .environmentObject(SettingsModel())
 }

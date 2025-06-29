@@ -14,15 +14,16 @@ struct ReaderSettings: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Toggle("Use Background Color", isOn: settings.$backgroundColorEnabled)
+                Toggle("Left to Right Reader", isOn: settings.$isLTR)
                 
+                
+                Toggle("Use Background Color", isOn: settings.$backgroundColorEnabled)
                 if settings.backgroundColorEnabled {
                     ColorPicker("Background Color", selection: settings.backgroundColor)
                         .padding(.leading)
                 }
                 
                 Toggle("Use Border Color", isOn: settings.$borderColorEnabled)
-                
                 if settings.borderColorEnabled {
                     ColorPicker("Border Color", selection: settings.borderColor)
                         .padding(.leading)

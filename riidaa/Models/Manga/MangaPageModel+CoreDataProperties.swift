@@ -23,6 +23,7 @@ extension MangaPageModel {
     @NSManaged public var boxes: NSSet
     @NSManaged public var width: Int32
     @NSManaged public var height: Int32
+    @NSManaged public var read_at: NSDate?
     
     
 

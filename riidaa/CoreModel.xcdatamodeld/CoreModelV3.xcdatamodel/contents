@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788.4" systemVersion="24D81" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="MangaModel" representedClassName=".MangaModel" syncable="YES">
+        <attribute name="anilist_id" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="cover" optional="YES" attributeType="Binary" defaultValueString="" allowsExternalBinaryDataStorage="YES" allowsCloudEncryption="YES"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="title" attributeType="String"/>
+        <relationship name="volumes" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="MangaVolumeModel" inverseName="manga" inverseEntity="MangaVolumeModel"/>
+    </entity>
+    <entity name="MangaPageModel" representedClassName=".MangaPageModel" syncable="YES">
+        <attribute name="height" attributeType="Integer 32" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="image" attributeType="String" allowsExternalBinaryDataStorage="YES"/>
+        <attribute name="number" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="read_at" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="width" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="boxes" toMany="YES" deletionRule="Cascade" destinationEntity="PageBoxModel" inverseName="page" inverseEntity="PageBoxModel"/>
+        <relationship name="volume" maxCount="1" deletionRule="Nullify" destinationEntity="MangaVolumeModel" inverseName="pages" inverseEntity="MangaVolumeModel"/>
+    </entity>
+    <entity name="MangaVolumeModel" representedClassName=".MangaVolumeModel" syncable="YES">
+        <attribute name="lastReadPage" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="number" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="manga" maxCount="1" deletionRule="Nullify" destinationEntity="MangaModel" inverseName="volumes" inverseEntity="MangaModel"/>
+        <relationship name="pages" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="MangaPageModel" inverseName="volume" inverseEntity="MangaPageModel"/>
+    </entity>
+    <entity name="PageBoxModel" representedClassName=".PageBoxModel" syncable="YES">
+        <attribute name="height" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="rotation" attributeType="Double" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="text" attributeType="String" defaultValueString=""/>
+        <attribute name="width" attributeType="Integer 32" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="x" attributeType="Integer 32" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="y" attributeType="Integer 32" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="page" maxCount="1" deletionRule="Nullify" destinationEntity="MangaPageModel" inverseName="boxes" inverseEntity="MangaPageModel"/>
+    </entity>
+</model>
