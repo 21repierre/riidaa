@@ -22,7 +22,9 @@ struct SettingsView: View {
                     NavigationLink(destination: ReaderSettings()) {
                         Text("Reader Settings")
                     }
-                    Toggle("Enable adult content", isOn: settings.$adult)
+                    #if !APPSTORE
+                        Toggle("Enable adult content", isOn: settings.$adult)
+                    #endif
                 }
                 .listRowBackground(Color(.systemGray6))
                 

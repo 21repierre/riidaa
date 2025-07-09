@@ -94,6 +94,9 @@ struct VolumeListView: View {
         })
         .fullScreenCover(item: $readingVolume) { v in
             MangaReader(volume: .constant(v), currentPage: Int(v.lastReadPage))
+                .onAppear {
+                    print("sadsadasd \(v.lastReadPage)")
+                }
         }
         .alert("Edit volume", isPresented: .init(get: {editVolume != nil}, set: { v in
             if !v {

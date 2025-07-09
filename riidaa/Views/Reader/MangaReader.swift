@@ -33,7 +33,7 @@ public struct MangaReader: View {
     private var displayedPages: [MangaPageModel] {
         settings.isLTR ? pages : pages.reversed()
     }
-
+    
     
     private var zoomGesture: some Gesture {
         if #available(iOS 17.0, *) {
@@ -79,7 +79,6 @@ public struct MangaReader: View {
         } else {
             self._pages = State(initialValue: [])
         }
-//        self._pages = State(initialValue: (volume.wrappedValue.pages.array as? [MangaPageModel] ?? []))
     }
     
     
@@ -98,10 +97,26 @@ public struct MangaReader: View {
                 }
                 .padding(.leading, 10)
                 Spacer()
+                
+                SwiftUIWheelPicker(
+                    .init(get: {
+                        settings.isLTR ? currentPage : pages.count - 1 - currentPage
+                    }, set: {v in
+                        currentPage = settings.isLTR ? v : pages.count - 1 - v
+                    }),
+                    items: .constant(settings.isLTR ? Array(0..<pages.count) : Array(0..<pages.count).reversed())
+                ) { value in
+                    GeometryReader { reader in
+                        Text("\(value + 1)")
+                            .frame(width: reader.size.width, height: reader.size.height, alignment: .center)
+                            .background(value == currentPage ? Color(.systemGray6) : Color.clear)
+                            .roundedCorners(10, corners: .allCorners)
+                    }
+                }
+                .width(.VisibleCount(6))
+                .scrollAlpha(0.4)
+                .frame(height: 40)
             }
-
-            Text("\(currentPage + 1)/\(displayedPages.count)")
-                .font(.headline)
         }
         GeometryReader { mainGeom in
             let minHeight = min(mainGeom.size.height * 0.2, max(mainGeom.size.height * 0.1, mainGeom.size.height - pageHeight))
@@ -118,18 +133,20 @@ public struct MangaReader: View {
                             let offsetY = Double(displayedPages[index].height) * scale / 2
                             let offsetX = Double(displayedPages[index].width) * scale / 2
                             ZStack {
-                                if abs(index - (settings.isLTR ? self.currentPage : displayedPages.count - self.currentPage)) <= 2 {
+                                if abs(index - (settings.isLTR ? self.currentPage : displayedPages.count - self.currentPage)) <= 10
+                                {
                                     if let imageData = displayedPages[index].getImage() {
                                         Image(uiImage: imageData)
                                             .resizable()
                                             .scaledToFit()
                                     } else {
-                                        Text("Image \(displayedPages[index].number) failed to load")
+                                        Text("Page \(displayedPages[index].number) failed to load")
                                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                                             .background(Color(.systemBackground))
                                             .foregroundColor(.primary)
                                     }
                                 } else {
+                                    //                                    Text("\(draggingPage) \(currentPage)")
                                     Image(systemName: "xmark")
                                         .resizable()
                                         .scaledToFit()
@@ -171,10 +188,13 @@ public struct MangaReader: View {
                                 }
                             }
                         }
-                        .tag(Int(displayedPages[index].number))
+                        .tag(Int(displayedPages[index].number)-1)
                     }
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                .transaction { txn in
+                    txn.disablesAnimations = true
+                }
                 .onChange(of: currentPage) { newPage in
                     pageZoom = 1.0
                     pageLastZoom = 1.0
@@ -182,8 +202,8 @@ public struct MangaReader: View {
                     pageInitialOffset = .zero
                     pageZoomAnchor = .center
                     self.currentLine = nil
-                    if displayedPages[currentPage].read_at == nil {
-                        displayedPages[currentPage].read_at = NSDate()
+                    if pages[currentPage].read_at == nil {
+                        pages[currentPage].read_at = NSDate()
                     }
                     volume.lastReadPage = Int64(newPage)
                     DispatchQueue.main.async {
@@ -198,7 +218,6 @@ public struct MangaReader: View {
                         .padding(.top, 5)
                         .padding(.bottom, 5)
                     
-                    // Text("\(minHeight + offset-dragOffset) \(tHeight1) \(tHeight2) \(dragOffset)")
                     MangaReaderParserView(line: currentLine ?? "")
                         .frame(maxWidth: .infinity)
                 }
@@ -233,7 +252,7 @@ public struct MangaReader: View {
 #Preview {
     MangaReader(volume: .init(get: {
         CoreDataManager.sampleManga.volumes[0] as! MangaVolumeModel
-    }, set: { _ in }), currentPage: 0)
+    }, set: { _ in }), currentPage: 2)
     .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
     .environmentObject(SettingsModel())
 }

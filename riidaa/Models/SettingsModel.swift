@@ -26,7 +26,11 @@ class SettingsModel: ObservableObject {
     @AppStorage("padding") var padding = 0.0
     @AppStorage("isLTR") var isLTR = false
     
+    #if APPSTORE
+    var adult = false
+    #else
     @AppStorage("adult") var adult = false
+    #endif
     
     var backgroundColor: Binding<Color> {
         Binding<Color>(

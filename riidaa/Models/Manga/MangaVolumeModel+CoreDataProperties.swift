@@ -105,9 +105,9 @@ extension CoreDataManager {
         volume.number = 1
         volume.lastReadPage = 10
         
-        for i in 0...50 {
+        for i in 0...150 {
             let p1 = MangaPageModel(context: CoreDataManager.shared.context)
-            p1.number = Int64(i)
+            p1.number = Int64(i)+1
             p1.image = "yamada01_\(i).jpg"
             volume.insertIntoPages(p1, at: i)
         }
