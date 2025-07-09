@@ -1,7 +1,11 @@
 <h1 align="center">リーダー</h1>
 <h3 align="center">A manga reader with support for <a href="https://github.com/yomidevs/yomitan">Yomitan</a> dictionaries</h3>
 <p align="center">
-	<img src="./assets/logo.png" width="30%" height="30%">
+	<img src="./assets/logo.png" width="20%">
+	<br>
+	<a href="https://apps.apple.com/us/app/%E3%83%AA%E3%83%BC%E3%83%80%E3%83%BC/id6747406845">
+		<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/1200px-Download_on_the_App_Store_Badge.svg.png" width="20%">
+	</a>
 </p>
 
 ## Features
