@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ZIPFoundation
+import CoreData
 
 struct VolumeListView: View {
     
@@ -14,13 +15,10 @@ struct VolumeListView: View {
     
     @ObservedObject var manga: MangaModel
     @State private var isPickingVolume = false
-    @State private var processingStatus = ProcessingStatus.NOTHING
-    @State private var processingMessage: String = "Processing volume..."
-    @State private var processingProgress: Int = 0
-    @State private var processingProgressMax: Int = 0
+    @StateObject var processingModel = VolumeProcessingModel()
     
     private var dismissDisabled: Bool {
-        return processingStatus == ProcessingStatus.STARTED
+        return processingModel.status == ProcessingStatus.STARTED
     }
     
     @State private var readingVolume: MangaVolumeModel? = nil
@@ -65,38 +63,35 @@ struct VolumeListView: View {
             }
         }
         .fileImporter(isPresented: $isPickingVolume, allowedContentTypes: [.zip]) { result in
-            self.processingMessage = "Processing volume..."
-            self.processingStatus = ProcessingStatus.STARTED
-            self.processingProgress = 0
-            self.processingProgressMax = 0
+            self.processingModel.message = "Processing volume..."
+            self.processingModel.status = ProcessingStatus.STARTED
+            self.processingModel.progressValue = 0
+            self.processingModel.progressMaxValue = 0
             switch result {
             case .success(let file):
-                processZipFile(path: file)
+                Task {
+                    await processZipFile(path: file)
+                }
             case .failure(let error):
                 print("error while picking volume file: \(error)")
             }
         }
         .sheet(
             isPresented: .init(get: {
-                return self.processingStatus != ProcessingStatus.NOTHING
+                return self.processingModel.status != ProcessingStatus.NOTHING
             }, set: { _ in }),
             onDismiss: {
-                if self.processingStatus != ProcessingStatus.STARTED {
-                    self.processingStatus = ProcessingStatus.NOTHING
+                if self.processingModel.status != ProcessingStatus.STARTED {
+                    self.processingModel.status = ProcessingStatus.NOTHING
                 }
             }
             
         ) {
-            VolumeProcessing(message: $processingMessage, status: $processingStatus, progressValue: $processingProgress, progressMaxValue: $processingProgressMax)
+            VolumeProcessing(processingModel: processingModel)
                 .interactiveDismissDisabled(dismissDisabled)
-        }.onAppear(perform: {
-            print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("mangas"))
-        })
+        }
         .fullScreenCover(item: $readingVolume) { v in
             MangaReader(volume: .constant(v), currentPage: Int(v.lastReadPage))
-                .onAppear {
-                    print("sadsadasd \(v.lastReadPage)")
-                }
         }
         .alert("Edit volume", isPresented: .init(get: {editVolume != nil}, set: { v in
             if !v {
@@ -104,7 +99,7 @@ struct VolumeListView: View {
             }
         }), actions: {
             TextField("New Volume Number", text: $editVolumeNumber)
-                            .keyboardType(.numberPad)
+                .keyboardType(.numberPad)
             Button("Cancel", role: .cancel) {
                 editVolume = nil
             }
@@ -122,38 +117,59 @@ struct VolumeListView: View {
 
 extension VolumeListView {
     
-    func processZipFile(path: URL) {
-        DispatchQueue.main.async {
-            let fileManager = FileManager.default
-            let tempDirectory = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    nonisolated func processZipFile(path: URL) async {
+        let mangaId = await manga.id
+        let fileManager = FileManager.default
+        let tempDirectory = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let backgroundContext = CoreDataManager.shared.container.newBackgroundContext()
+        
+        do {
+            var mangaInContext: MangaModel? = nil
+            try await backgroundContext.perform {
+                let fetchRequest: NSFetchRequest<MangaModel> = MangaModel.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "id == %@", mangaId as CVarArg)
+                mangaInContext = try backgroundContext.fetch(fetchRequest).first
+            }
+            guard let mangaInContext = mangaInContext else {
+                throw NSError(domain: "VolumeProcessing", code: 0, userInfo: [NSLocalizedDescriptionKey: "Manga not found ??"])
+            }
             
-            do {
-                if !path.startAccessingSecurityScopedResource() {
-                    throw NSError(domain: "VolumeProcessing", code: 0, userInfo: [NSLocalizedDescriptionKey: "Permission denied"])
+            if !path.startAccessingSecurityScopedResource() {
+                throw NSError(domain: "VolumeProcessing", code: 0, userInfo: [NSLocalizedDescriptionKey: "Permission denied"])
+            }
+            defer {
+                path.stopAccessingSecurityScopedResource()
+            }
+            try fileManager.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+            await MainActor.run {
+                self.processingModel.message = "Extracting zip file..."
+                self.processingModel.progressMaxValue = 1
+            }
+            try fileManager.unzipItem(at: path, to: tempDirectory)
+            await MainActor.run {
+                self.processingModel.message = "Extracted zip file."
+                self.processingModel.progressValue = 1
+            }
+            
+            var extractedItems = try fileManager.contentsOfDirectory(at: tempDirectory, includingPropertiesForKeys: nil).filter { $0.lastPathComponent != "__MACOSX" }
+            
+            if extractedItems.count == 1,
+               fileManager.isDirectory(at: extractedItems[0]) {
+                let nestedFolder = extractedItems[0]
+                extractedItems = try fileManager.contentsOfDirectory(at: nestedFolder, includingPropertiesForKeys: nil)
+            }
+            defer {
+                try? fileManager.removeItem(at: tempDirectory)
+            }
+            
+            let mokuroFiles = extractedItems.filter { $0.pathExtension == "mokuro" }
+            for mokuroFile in mokuroFiles {
+                let imagesFolder = URL(string: mokuroFile.absoluteString.replacingOccurrences(of: ".\(mokuroFile.pathExtension)", with: ""))
+                guard let imagesFolder = imagesFolder else {
+                    throw NSError(domain: "VolumeProcessing", code: 1, userInfo: [NSLocalizedDescriptionKey: "\(mokuroFile) doesn't have an associated image folder"])
                 }
-                defer {
-                    path.stopAccessingSecurityScopedResource()
-                }
-                try fileManager.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
-                try fileManager.unzipItem(at: path, to: tempDirectory)
-                
-                var extractedItems = try fileManager.contentsOfDirectory(at: tempDirectory, includingPropertiesForKeys: nil).filter { $0.lastPathComponent != "__MACOSX" }
-                                 
-                if extractedItems.count == 1,
-                   fileManager.isDirectory(at: extractedItems[0]) {
-                    let nestedFolder = extractedItems[0]
-                    extractedItems = try fileManager.contentsOfDirectory(at: nestedFolder, includingPropertiesForKeys: nil)
-                }
-                
-                let mokuroFile = extractedItems.first { $0.pathExtension == "mokuro" }
-                let imagesFolder = extractedItems.first { $0.lastPathComponent != "_ocr" && fileManager.isDirectory(at: $0) }
-                
-                defer {
-                    try? fileManager.removeItem(at: tempDirectory)
-                }
-                
-                guard let mokuroFile = mokuroFile, let imagesFolder = imagesFolder else {
-                    throw NSError(domain: "VolumeProcessing", code: 1, userInfo: [NSLocalizedDescriptionKey: "Missing .mokuro file or folder in ZIP"])
+                if !fileManager.isDirectory(at: imagesFolder) {
+                    continue
                 }
                 let mokuroData = try Data(contentsOf: mokuroFile)
                 guard let mokuroJson = try JSONSerialization.jsonObject(with: mokuroData, options: []) as? [String: Any] else {
@@ -162,12 +178,12 @@ extension VolumeListView {
                 
                 guard let volumeName = mokuroJson["volume"] as? String,
                       let titleName = mokuroJson["title"] as? String else {
-                    throw NSError(domain: "VolumeProcessing", code: 3, userInfo: [NSLocalizedDescriptionKey: "Missing 'volume' or 'title' in mokuro"])
+                    throw NSError(domain: "VolumeProcessing", code: 3, userInfo: [NSLocalizedDescriptionKey: "Missing 'volume' or 'title' in mokuro \(mokuroFile)"])
                 }
-
+                
                 // Try to extract the first integer found in volumeName
                 let volumeNum: Int64?
-
+                
                 // Use regex to find the first sequence of digits in volumeName
                 if let range = volumeName.range(of: "\\d+", options: .regularExpression) {
                     let numberString = String(volumeName[range])
@@ -177,32 +193,41 @@ extension VolumeListView {
                     let v1 = volumeName.replacingOccurrences(of: titleName, with: "").dropFirst(2)
                     volumeNum = Int64(v1)
                 }
-
                 guard let volumeNumber = volumeNum else {
                     throw NSError(domain: "VolumeProcessing", code: 4, userInfo: [NSLocalizedDescriptionKey: "Invalid volume number in: \(volumeName)"])
                 }
-
                 
-                print("Volume number \(volumeNumber)")
-                for vol in manga.volumes.array as! [MangaVolumeModel] {
-                    if vol.number == volumeNumber {
-                        throw NSError(domain: "VolumeProcessing", code: 5, userInfo: [NSLocalizedDescriptionKey: "A volume with the same number already exists"])
+                try await backgroundContext.perform {
+                    for vol in mangaInContext.volumes.array as! [MangaVolumeModel] {
+                        if vol.number == volumeNumber {
+                            throw NSError(domain: "VolumeProcessing", code: 5, userInfo: [NSLocalizedDescriptionKey: "A volume with the same number (\(volumeNumber)) already exists"])
+                        }
                     }
                 }
                 
-                let newVolume = MangaVolumeModel(context: moc)
-                newVolume.number = volumeNumber
-                manga.addToVolumes(newVolume)
+                var newVolume: MangaVolumeModel? = nil
+                await backgroundContext.perform {
+                    newVolume = MangaVolumeModel(context: backgroundContext)
+                    newVolume!.number = volumeNumber
+                    mangaInContext.addToVolumes(newVolume!)
+                }
+                guard let newVolume = newVolume else {
+                    throw NSError(domain: "VolumeProcessing", code: 0, userInfo: [NSLocalizedDescriptionKey: "newVolume is nil"])
+                }
                 
                 // pages
                 guard let pages = mokuroJson["pages"] as? [[String: Any]] else {
                     throw NSError(domain: "VolumeProcessing", code: 6, userInfo: [NSLocalizedDescriptionKey: "Missing pages in mokuro"])
                 }
-                self.processingProgressMax = pages.count
+                
+                await MainActor.run {
+                    self.processingModel.message = "Processing volume \(volumeNumber)."
+                    self.processingModel.progressMaxValue = pages.count
+                }
                 
                 let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("mangas")
-                let volumeDirectory = documents.appendingPathComponent(manga.id.uuidString).appendingPathComponent(String(newVolume.number))
-
+                let volumeDirectory = documents.appendingPathComponent(mangaInContext.id.uuidString).appendingPathComponent(String(newVolume.number))
+                
                 try fileManager.createDirectory(at: volumeDirectory, withIntermediateDirectories: true)
                 
                 for (i, page) in pages.enumerated() {
@@ -216,13 +241,18 @@ extension VolumeListView {
                     try? fileManager.removeItem(at: destImg)
                     try fileManager.moveItem(at: img, to: destImg)
                     
-                    let newPage = MangaPageModel(context: moc)
-                    newVolume.addToPages(newPage)
-                    newPage.number = Int64(i + 1)
-                    newPage.image = img_path
-                    
-                    newPage.width = img_width
-                    newPage.height = img_height
+                    var newPage: MangaPageModel? = nil
+                    await backgroundContext.perform {
+                        newPage = MangaPageModel(context: backgroundContext)
+                        newVolume.addToPages(newPage!)
+                        newPage!.number = Int64(i + 1)
+                        newPage!.image = img_path
+                        newPage!.width = img_width
+                        newPage!.height = img_height
+                    }
+                    guard let newPage = newPage else {
+                        throw NSError(domain: "VolumeProcessing", code: 6, userInfo: [NSLocalizedDescriptionKey: "newPage is nil"])
+                    }
                     
                     // Text boxes
                     guard let blocks = page["blocks"] as? [[String: Any]] else {
@@ -235,40 +265,36 @@ extension VolumeListView {
                         }
                         let rotation = block["rotation"] as? Double
                         
-                        let pageBlock = PageBoxModel(context: moc)
-                        pageBlock.x = box[0]
-                        pageBlock.y = box[1]
-                        pageBlock.width = (box[2] - box[0])
-                        pageBlock.height = (box[3] - box[1])
-                        pageBlock.text = lines.joined()
-                        pageBlock.rotation = rotation ?? 0
-                        
-                        newPage.addToBoxes(pageBlock)
-                        
-                        if pageBlock.managedObjectContext != newPage.managedObjectContext {
-                            print("gros caca")
+                        await backgroundContext.perform {
+                            let pageBlock = PageBoxModel(context: backgroundContext)
+                            pageBlock.x = box[0]
+                            pageBlock.y = box[1]
+                            pageBlock.width = (box[2] - box[0])
+                            pageBlock.height = (box[3] - box[1])
+                            pageBlock.text = lines.joined()
+                            pageBlock.rotation = rotation ?? 0
+                            
+                            newPage.addToBoxes(pageBlock)
                         }
                     }
-//                    print(newPage.number, newPage.boxes.count)
-                    self.processingProgress = i
+                    await MainActor.run {
+                        self.processingModel.progressValue = i
+                    }
                 }
-                
-                
-                self.processingMessage = "Volume processed."
-            } catch {
-                self.processingStatus = ProcessingStatus.ERROR
-                self.processingMessage = error.localizedDescription
             }
             
-            DispatchQueue.main.async {
-                if self.processingStatus != ProcessingStatus.ERROR {
-                    do {
-                        try moc.save()
-                    } catch {
-                        print("cant save\(error)")
-                    }
-                    self.processingStatus = ProcessingStatus.FINISHED
-                }
+            try await backgroundContext.perform {
+                try backgroundContext.save()
+            }
+        } catch {
+            await MainActor.run {
+                self.processingModel.status = ProcessingStatus.ERROR
+                self.processingModel.message = error.localizedDescription
+            }
+        }
+        await MainActor.run {
+            if self.processingModel.status != ProcessingStatus.ERROR {
+                self.processingModel.status = ProcessingStatus.FINISHED
             }
         }
     }
@@ -282,18 +308,23 @@ enum ProcessingStatus {
          ERROR
 }
 
+class VolumeProcessingModel: ObservableObject {
+    @Published var status: ProcessingStatus = .NOTHING
+    @Published var message: String = "Processing volume..."
+    @Published var progressValue: Int = 0
+    @Published var progressMaxValue: Int = 0
+}
+
+
 struct VolumeProcessing: View {
     
-    @Binding var message: String
-    @Binding var status: ProcessingStatus
-    @Binding var progressValue: Int
-    @Binding var progressMaxValue: Int
+    @ObservedObject var processingModel: VolumeProcessingModel
     
     var body: some View {
         VStack(spacing: 40) {
-            switch self.status {
+            switch processingModel.status {
             case .STARTED:
-                CircularProgressView(progress: progressValue, progressMax: progressMaxValue)
+                CircularProgressView(progress: processingModel.progressValue, progressMax: processingModel.progressMaxValue)
                     .frame(width: 150, height: 150)
                 
             case .FINISHED:
@@ -307,7 +338,7 @@ struct VolumeProcessing: View {
             case .NOTHING:
                 EmptyView()
             }
-            Text(message)
+            Text(processingModel.message)
                 .font(.largeTitle)
                 .multilineTextAlignment(.center)
                 .padding()
