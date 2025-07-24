@@ -9,7 +9,7 @@
 import Foundation
 import SwiftUI
 
-public class TermDB: Hashable {
+public class TermDB: Hashable, CustomStringConvertible {
     
     public static func == (lhs: TermDB, rhs: TermDB) -> Bool {
         return lhs.term == rhs.term && lhs.reading == rhs.reading && lhs.dictionary.id == rhs.dictionary.id
@@ -32,6 +32,10 @@ public class TermDB: Hashable {
     let dictionary: DictionaryDB
     
     @Published var parseDefinition: [ContentDefinition] = []
+    
+    public var description: String {
+        "term=\(term) reading=\(reading) defTags=\(definitionTags) types=\(wordTypes) score=\(score) sequence=\(sequenceNumber) termTags=\(termTags)"
+    }
     
     init(term: String, reading: String, definitionTags: [String], wordTypes: [WordType], score: Int64, definitions: Data, sequenceNumber: Int64, termTags: [String], dictionary: DictionaryDB) {
         self.term = term

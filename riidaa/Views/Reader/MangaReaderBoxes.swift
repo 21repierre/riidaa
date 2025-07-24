@@ -24,6 +24,7 @@ struct MangaReaderBoxes: View {
                 Rectangle()
                     .fill(Color.clear)
                     .contentShape(Rectangle())
+                    .allowsHitTesting(true)
                 
                 Rectangle()
                     .fill(settings.backgroundColorEnabled ? settings.backgroundColor.wrappedValue : Color.clear)
@@ -38,10 +39,9 @@ struct MangaReaderBoxes: View {
                 y: Double(box.y + box.height / 2) * scale - offsetY
             )
             .rotationEffect(Angle(degrees: box.rotation))
-            .onTapGesture {
-                currentLine = box.text
-            }
+            .highPriorityGesture(SpatialTapGesture(count: 1).onEnded { _ in
+                    currentLine = box.text
+            })
         }
     }
 }
-

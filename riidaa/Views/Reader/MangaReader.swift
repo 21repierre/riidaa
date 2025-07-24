@@ -7,6 +7,7 @@
 
 import SwiftUI
 import LazyPager
+//import Zoomable
 
 public struct MangaReader: View {
     
@@ -20,55 +21,21 @@ public struct MangaReader: View {
     @State private var pages: [MangaPageModel] = []
     @State private var currentLine: String? = nil
     
-    @State private var pageZoom: CGFloat = 1.0
-    @State private var pageLastZoom: CGFloat = 1.0
-    @State private var pageZoomAnchor: UnitPoint = .center
-    @State private var pageOffset: CGSize = .zero
-    @State private var pageInitialOffset: CGSize = .zero
-    
     @State private var parserOffset: CGFloat = 0
     @GestureState private var dragOffset: CGFloat = 0
     @State private var pageHeight = 0.0
+    @State private var ready = false
+    
+    @State private var orientation = UIDeviceOrientation.landscapeLeft// UIDevice.current.orientation
     
     private var displayedPages: [MangaPageModel] {
         settings.isLTR ? pages : pages.reversed()
     }
     
     
-    private var zoomGesture: some Gesture {
-        if #available(iOS 17.0, *) {
-            return MagnifyGesture()
-                .onChanged { state in
-                    pageZoomAnchor = state.startAnchor
-                    pageZoom = max(0.5, pageLastZoom * state.magnification)
-                }
-                .onEnded { _ in
-                    if pageZoom <= 1.0 {
-                        withAnimation(.easeInOut(duration: 0.5)) {
-                            pageInitialOffset = .zero
-                            pageOffset = .zero
-                            pageZoomAnchor = .center
-                        }
-                    }
-                    pageZoom = max(1.0, pageZoom)
-                    pageLastZoom = pageZoom
-                }
-        } else {
-            return MagnificationGesture()
-                .onChanged { value in
-                    pageZoom = max(0.5, pageLastZoom * value)
-                }
-                .onEnded { _ in
-                    if pageZoom <= 1.0 {
-                        withAnimation(.easeInOut(duration: 0.5)) {
-                            pageInitialOffset = .zero
-                            pageOffset = .zero
-                        }
-                    }
-                    pageZoom = max(1.0, pageZoom)
-                    pageLastZoom = pageZoom
-                }
-        }
+    var isDualPage: Bool {
+                UIDevice.current.userInterfaceIdiom == .pad && (UIDevice.current.orientation == .landscapeLeft || UIDevice.current.orientation == .landscapeRight)
+//        true
     }
     
     public init(volume: Binding<MangaVolumeModel>, currentPage: Int) {
@@ -79,6 +46,10 @@ public struct MangaReader: View {
         } else {
             self._pages = State(initialValue: [])
         }
+    }
+    
+    func parserHeight(minHeight: CGFloat, maxHeight: CGFloat) -> CGFloat {
+        max(min(minHeight + parserOffset-dragOffset, maxHeight), minHeight)
     }
     
     
@@ -100,17 +71,41 @@ public struct MangaReader: View {
                 
                 SwiftUIWheelPicker(
                     .init(get: {
-                        settings.isLTR ? currentPage : pages.count - 1 - currentPage
+                        if isDualPage {
+                            return settings.isLTR ? currentPage / 2 : (pages.count - 1 - currentPage) / 2
+                        } else {
+                            return settings.isLTR ? currentPage : pages.count - 1 - currentPage
+                        }
                     }, set: {v in
-                        currentPage = settings.isLTR ? v : pages.count - 1 - v
+                        if isDualPage {
+                            currentPage = settings.isLTR ? v * 2 : max(0, pages.count - 1 - (v * 2))
+                        } else {
+                            currentPage = settings.isLTR ? v : pages.count - 1 - v
+                        }
                     }),
-                    items: .constant(settings.isLTR ? Array(0..<pages.count) : Array(0..<pages.count).reversed())
+                    items: .constant({
+                        if isDualPage {
+                            let c = (pages.count + 1) / 2
+                            return settings.isLTR ? Array(0..<c) : Array(0..<c).reversed()
+                        } else {
+                            return settings.isLTR ? Array(0..<pages.count) : Array(0..<pages.count).reversed()
+                        }
+                    }())
                 ) { value in
                     GeometryReader { reader in
-                        Text("\(value + 1)")
-                            .frame(width: reader.size.width, height: reader.size.height, alignment: .center)
-                            .background(value == currentPage ? Color(.systemGray6) : Color.clear)
-                            .roundedCorners(10, corners: .allCorners)
+                        if isDualPage {
+                            let start = value * 2 + 1
+                            let tmp: String = (start + 1) < pages.count ? (settings.isLTR ? "\(start)-\(start+1)" : "\(start+1)-\(start)") : "\(start)"
+                            Text("\(tmp)")
+                                .frame(width: reader.size.width, height: reader.size.height, alignment: .center)
+                                .background(start-1 == currentPage ? Color(.systemGray6) : Color.clear)
+                                .roundedCorners(10, corners: .allCorners)
+                        } else {
+                            Text("\(value + 1)")
+                                .frame(width: reader.size.width, height: reader.size.height, alignment: .center)
+                                .background(value == currentPage ? Color(.systemGray6) : Color.clear)
+                                .roundedCorners(10, corners: .allCorners)
+                        }
                     }
                 }
                 .width(.VisibleCount(6))
@@ -118,77 +113,65 @@ public struct MangaReader: View {
                 .frame(height: 40)
             }
         }
+        .onRotate { newRotation in
+            orientation = newRotation
+            if newRotation == .landscapeLeft || newRotation == .landscapeRight {
+                ready = false
+                currentPage -= (currentPage%2)
+            }
+        }
+        
         GeometryReader { mainGeom in
-            let minHeight = min(mainGeom.size.height * 0.2, max(mainGeom.size.height * 0.1, mainGeom.size.height - pageHeight))
+            let minHeight = CGFloat(100)//min(mainGeom.size.height * 0.2, max(mainGeom.size.height * 0.1, mainGeom.size.height - pageHeight))
             let maxHeight = mainGeom.size.height * 0.8
             let tHeight1 = (maxHeight + minHeight)/3
             let tHeight2 = 2 * tHeight1
             
             ZStack(alignment: .bottom) {
-                TabView(selection: $currentPage) {
-                    ForEach(displayedPages.indices, id: \.self) { index in
-                        GeometryReader { geometry in
-                            let scale = min(geometry.size.width / Double(displayedPages[index].width),
-                                            geometry.size.height / Double(displayedPages[index].height))
-                            let offsetY = Double(displayedPages[index].height) * scale / 2
-                            let offsetX = Double(displayedPages[index].width) * scale / 2
-                            ZStack {
-                                if abs(index - (settings.isLTR ? self.currentPage : displayedPages.count - self.currentPage)) <= 10
-                                {
-                                    if let imageData = displayedPages[index].getImage() {
-                                        Image(uiImage: imageData)
-                                            .resizable()
-                                            .scaledToFit()
-                                    } else {
-                                        Text("Page \(displayedPages[index].number) failed to load")
-                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                            .background(Color(.systemBackground))
-                                            .foregroundColor(.primary)
-                                    }
+                TabView(selection: .init(get: {
+                    if isDualPage {
+                        currentPage - (currentPage%2)
+                    } else {
+                        currentPage
+                    }
+                }, set: {v in
+                    if isDualPage {
+                        if ready {
+                            currentPage = v - (v%2)
+                        }
+                    } else {
+                        currentPage = v
+                    }
+                })) {
+                    if isDualPage {
+                        let start = settings.isLTR ? 0 : displayedPages.count % 2
+                        ForEach(Array(stride(from: start, to: displayedPages.count, by: 2)), id: \.self) { index in
+                            VStack(spacing: 0) {
+//                                Text("\(currentPage - (currentPage%2)) \(Int(displayedPages[index].number) - (settings.isLTR ? 1 : 2))")
+                                if index + 1 < displayedPages.count {
+                                    doublePageDisplay(index1: index, index2: index + 1)
                                 } else {
-                                    //                                    Text("\(draggingPage) \(currentPage)")
-                                    Image(systemName: "xmark")
-                                        .resizable()
-                                        .scaledToFit()
+                                    pageDisplay(index: index)
                                 }
-                                MangaReaderBoxes(boxes: displayedPages[index].getBoxes(), scale: scale, offsetX: offsetX, offsetY: offsetY, currentLine: $currentLine)
                             }
-                            .frame(maxWidth: .infinity, alignment: .top)
-                            .scaleEffect(pageZoom, anchor: pageZoomAnchor)
-                            .offset(pageOffset)
+                            .zoomable()
+                            .tag(Int(displayedPages[index].number) - (settings.isLTR ? 1 : 2))
+                            .frame(maxHeight: max(100, mainGeom.size.height - minHeight))
+                            .offset(y: -minHeight/2)
                             .onAppear {
-                                pageHeight = Double(displayedPages[index].height) * scale
-                            }
-                            .gesture(
-                                zoomGesture
-                            ).simultaneousGesture(
-                                DragGesture()
-                                    .onChanged { gesture in
-                                        pageOffset = CGSize(
-                                            width: pageInitialOffset.width + gesture.translation.width,
-                                            height: pageInitialOffset.height + gesture.translation.height
-                                        )
-                                    }
-                                    .onEnded { _ in
-                                        pageInitialOffset = pageOffset
-                                    }, isEnabled: pageZoom > 1)
-                            .onTapGesture(count: 2) {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    if pageZoom > 1 {
-                                        pageZoom = 1.0
-                                        pageLastZoom = 1.0
-                                        pageOffset = .zero
-                                        pageInitialOffset = .zero
-                                        pageZoomAnchor = .center
-                                    } else {
-                                        pageZoom = 2.0
-                                        pageLastZoom = 2.0
-                                        pageZoomAnchor = .center
-                                    }
-                                }
+                                ready = true
                             }
                         }
-                        .tag(Int(displayedPages[index].number)-1)
+                    } else {
+                        ForEach(displayedPages.indices, id: \.self) { index in
+                            VStack {
+                                pageDisplay(index: index)
+                            }
+                            .zoomable()
+                            .tag(Int(displayedPages[index].number) - 1)
+                            .frame(maxHeight: max(100, mainGeom.size.height - minHeight))
+                            .offset(y: -minHeight/2)
+                        }
                     }
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
@@ -196,11 +179,6 @@ public struct MangaReader: View {
                     txn.disablesAnimations = true
                 }
                 .onChange(of: currentPage) { newPage in
-                    pageZoom = 1.0
-                    pageLastZoom = 1.0
-                    pageOffset = .zero
-                    pageInitialOffset = .zero
-                    pageZoomAnchor = .center
                     self.currentLine = nil
                     if pages[currentPage].read_at == nil {
                         pages[currentPage].read_at = NSDate()
@@ -221,7 +199,7 @@ public struct MangaReader: View {
                     MangaReaderParserView(line: currentLine ?? "")
                         .frame(maxWidth: .infinity)
                 }
-                .frame(height: max(min(minHeight + parserOffset-dragOffset, maxHeight), minHeight), alignment: .top)
+                .frame(height: parserHeight(minHeight: minHeight, maxHeight: maxHeight), alignment: .bottom)
                 .background(Color(.systemGray6))
                 .roundedCorners(20, corners: [.topLeft, .topRight])
                 .gesture(
@@ -244,6 +222,109 @@ public struct MangaReader: View {
         }
         .navigationTitle("\(currentPage + 1)/\(volume.pages.count)")
         .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    
+    @ViewBuilder
+    public func pageDisplay(index: Int) -> some View {
+        let page = displayedPages[index]
+        GeometryReader { geometry in
+            let scale = min(geometry.size.width / Double(page.width),
+                            geometry.size.height / Double(page.height))
+            let offsetY = Double(page.height) * scale / 2
+            let offsetX = Double(page.width) * scale / 2
+            ZStack(alignment: .center) {
+                if abs(index - (settings.isLTR ? self.currentPage : displayedPages.count - self.currentPage)) <= 10
+                {
+                    if let imageData = page.getImage() {
+                        Image(uiImage: imageData)
+                            .resizable()
+                            .scaledToFit()
+                    } else {
+                        Image(systemName: "xmark")
+                            .resizable()
+                            .frame(width: 400)
+                        Text("Page \(page.number) failed to load")
+                            .frame(maxHeight: .infinity)
+                            .background(Color(.systemBackground))
+                            .foregroundColor(.primary)
+                    }
+                } else {
+                    Image(systemName: "xmark")
+                        .resizable()
+                        .scaledToFit()
+                }
+                MangaReaderBoxes(boxes: page.getBoxes(), scale: scale, offsetX: offsetX, offsetY: offsetY, currentLine: $currentLine)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .onAppear {
+                pageHeight = Double(page.height) * scale
+            }
+        }
+    }
+    
+    @ViewBuilder
+    public func doublePageDisplay(index1: Int, index2: Int) -> some View {
+        let page1 = displayedPages[index1]
+        let page2 = displayedPages[index2]
+        GeometryReader { geometry in
+            let halfWidth = geometry.size.width / 2
+            let scale1 = min(halfWidth / Double(page1.width),
+                             geometry.size.height / Double(page1.height))
+            let scale2 = min(halfWidth / Double(page2.width),
+                             geometry.size.height / Double(page2.height))
+            
+            let offsetY1 = Double(page1.height) * scale1 / 2
+            let offsetY2 = Double(page2.height) * scale2 / 2
+            
+            let offsetX1 = Double(page1.width) * scale1 / 2
+            let offsetX2 = Double(page2.width) * scale2 / 2
+
+            ZStack(alignment: .center) {
+                if abs(index1 - (settings.isLTR ? self.currentPage : displayedPages.count - self.currentPage)) <= 10
+                {
+                    HStack(spacing: 0) {
+                        if let imageData = page1.getImage() {
+                            Image(uiImage: imageData)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: halfWidth, alignment: .trailing)
+//                                .clipped()
+                        } else {
+                            Text("Page \(page1.number) failed to load")
+                                .frame(maxHeight: .infinity)
+                                .background(Color(.systemBackground))
+                                .foregroundColor(.primary)
+                        }
+                        if let imageData = page2.getImage() {
+                            Image(uiImage: imageData)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: halfWidth, alignment: .leading)
+                            //                                .clipped()
+                        } else {
+                            Text("Page \(page2.number) failed to load")
+                                .frame(maxHeight: .infinity)
+                                .background(Color(.systemBackground))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                } else {
+                    Image(systemName: "xmark")
+                        .resizable()
+                        .scaledToFit()
+                }
+                MangaReaderBoxes(boxes: page1.getBoxes(), scale: scale1, offsetX: offsetX1, offsetY: offsetY1, currentLine: $currentLine)
+                    .frame(width: halfWidth)
+                    .offset(x: -offsetX1)
+                MangaReaderBoxes(boxes: page2.getBoxes(), scale: scale2, offsetX: offsetX2, offsetY: offsetY2, currentLine: $currentLine)
+                    .offset(x: offsetX2)
+            }
+            .frame(maxWidth: .infinity, alignment: .top)
+            .onAppear {
+                pageHeight = max(Double(page1.height) * scale2, Double(page2.height) * scale2)
+            }
+        }
     }
     
 }

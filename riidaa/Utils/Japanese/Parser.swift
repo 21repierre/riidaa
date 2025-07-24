@@ -9,11 +9,11 @@ import CoreData
 
 public struct TermDeinflection : Hashable {
     public static func == (lhs: TermDeinflection, rhs: TermDeinflection) -> Bool {
-        return lhs.term == rhs.term && lhs.deinflection == rhs.deinflection
+        return lhs.term == rhs.term && lhs.deinflections == rhs.deinflections
     }
     
     public let term: TermDB
-    public let deinflection: Deinflection
+    public let deinflections: [Deinflection]
     
 }
 
@@ -51,16 +51,32 @@ public struct Parser {
                 let results = SQLiteManager.shared.findTerms(texts: mappedTerms.flatMap { $0 })
                 for deinflection in deinflections {
                     for term in results where
-                    (term.term.katakanaToHiragana() == deinflection.text.katakanaToHiragana() ||
-                     term.reading.katakanaToHiragana() == deinflection.text.katakanaToHiragana()) &&
-                    (deinflection.types.count == 0 || term.wordTypes.count == 0 ||  deinflection.types.inflectionMatch(wl: term.wordTypes)) {
-                        terms.append(TermDeinflection(term: term, deinflection: deinflection))
+                        (term.term.katakanaToHiragana() == deinflection.text.katakanaToHiragana() ||
+                            term.reading.katakanaToHiragana() == deinflection.text.katakanaToHiragana()) &&
+                        (deinflection.types.count == 0 ||
+                             term.wordTypes.count == 0 ||
+                             deinflection.types.inflectionMatch(wl: term.wordTypes)) {
+                        terms.append(TermDeinflection(term: term, deinflections: [deinflection]))
                     }
                 }
                 if !terms.isEmpty {
+                    let groupedTerms = Dictionary(grouping: terms, by: { $0.term })
+                    let mergedTerms: [TermDeinflection] = groupedTerms.map { (term, group) in
+                        let combinedDeinflections = group.flatMap { $0.deinflections }
+                        return TermDeinflection(term: term, deinflections: combinedDeinflections)
+                    }
+                    
                     possibilities.append(ParsingResult(
                         original: cut,
-                        results: terms.sorted{ $0.term.score > $1.term.score }
+                        results: mergedTerms.sorted{
+                            if $0.term.reading == cut && $1.term.reading != cut {
+                                return true
+                            } else if $0.term.reading != cut && $1.term.reading == cut {
+                                return false
+                            } else {
+                                return $0.term.score > $1.term.score
+                            }
+                        }
                     ))
                 }
             }
@@ -88,6 +104,7 @@ public struct Parser {
                 l += 1
             }
         }
+//        print(parts)
         return parts
     }
     

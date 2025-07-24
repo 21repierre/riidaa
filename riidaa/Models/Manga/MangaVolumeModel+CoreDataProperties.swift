@@ -109,6 +109,17 @@ extension CoreDataManager {
             let p1 = MangaPageModel(context: CoreDataManager.shared.context)
             p1.number = Int64(i)+1
             p1.image = "yamada01_\(i).jpg"
+            p1.height = 3000
+            p1.width = 1500
+            
+            let box = PageBoxModel(context: CoreDataManager.shared.context)
+            box.height = 50
+            box.width = 100
+            box.text = "俺"
+            box.x = 100
+            box.y = 200
+            p1.addToBoxes(box)
+            
             volume.insertIntoPages(p1, at: i)
         }
         

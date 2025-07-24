@@ -158,19 +158,19 @@ extension MangaReaderParserView {
         //        line: "君は学校を何だと思っているのかね",
         parsedText: [
             ParsingResult(original: "君", results: [
-                TermDeinflection(term: TermDB(term: "君", reading: "きみ", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflection: Deinflection(text: "君", inflections: [], types: []))
+                TermDeinflection(term: TermDB(term: "君", reading: "きみ", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflections: [Deinflection(text: "君", inflections: [], types: [])])
             ]),
             ParsingResult(original: "は", results: [
-                TermDeinflection(term: TermDB(term: "は", reading: "は", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflection: Deinflection(text: "は", inflections: [], types: []))
+                TermDeinflection(term: TermDB(term: "は", reading: "は", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflections: [Deinflection(text: "は", inflections: [], types: [])])
             ]),
             ParsingResult(original: "学校", results: [
-                TermDeinflection(term: TermDB(term: "学校", reading: "がっこう", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflection: Deinflection(text: "学校", inflections: [], types: []))
+                TermDeinflection(term: TermDB(term: "学校", reading: "がっこう", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflections: [Deinflection(text: "学校", inflections: [], types: [])])
             ]),
             ParsingResult(original: "を", results: [
-                TermDeinflection(term: TermDB(term: "を", reading: "を", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflection: Deinflection(text: "を", inflections: [], types: []))
+                TermDeinflection(term: TermDB(term: "を", reading: "を", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflections: [Deinflection(text: "を", inflections: [], types: [])])
             ]),
             ParsingResult(original: "何だと", results: [
-                TermDeinflection(term: TermDB(term: "何だと", reading: "なんだと", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflection: Deinflection(text: "何だと", inflections: [], types: []))
+                TermDeinflection(term: TermDB(term: "何だと", reading: "なんだと", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflections: [Deinflection(text: "何だと", inflections: [], types: [])])
             ]),
             ParsingResult(original: "思っている", results: [
                 TermDeinflection(
@@ -186,15 +186,15 @@ extension MangaReaderParserView {
                         termTags: [],
                         dictionary: DictionaryDB(id: 1, revision: "", title: "Jitandex", format: 3)
                     ),
-                    deinflection: Deinflection(text: "思っている", inflections: [
+                    deinflections: [Deinflection(text: "思っている", inflections: [
                         InflectionRule.iru, InflectionRule.te
-                    ], types: []))
+                    ], types: [])])
             ]),
             ParsingResult(original: "のか", results: [
-                TermDeinflection(term: TermDB(term: "のか", reading: "のか", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflection: Deinflection(text: "のか", inflections: [], types: []))
+                TermDeinflection(term: TermDB(term: "のか", reading: "のか", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflections: [Deinflection(text: "のか", inflections: [], types: [])])
             ]),
             ParsingResult(original: "ね", results: [
-                TermDeinflection(term: TermDB(term: "ね", reading: "ね", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflection: Deinflection(text: "ね", inflections: [], types: []))
+                TermDeinflection(term: TermDB(term: "ね", reading: "ね", definitionTags: [], wordTypes: [], score: 200, definitions: Data(), sequenceNumber: 1, termTags: [], dictionary: DictionaryDB(id: 1, revision: "", title: "", format: 3)), deinflections: [Deinflection(text: "ね", inflections: [], types: [])])
             ]),
         ],
         selectedElement: 5
@@ -211,16 +211,15 @@ struct ResultView: View {
         VStack(alignment: .leading) {
             Text("\(result.term.term) (\(result.term.reading))")
                 .font(.title)
-            if !result.deinflection.inflections.isEmpty {
+            ForEach(result.deinflections, id: \.inflections) { deinflection in
                 HStack(spacing: 0) {
                     Text("🚂")
                         .font(.callout)
-                    ForEach(result.deinflection.inflections.reversed()) { rule in
+                    ForEach(deinflection.inflections.reversed()) { rule in
                         Text("«")
                             .font(.callout)
                             .padding([.horizontal], 3)
                         Button {
-                            //                            localPath.append(rule.description)
                             withAnimation {
                                 definition = rule.description
                             }
@@ -228,8 +227,6 @@ struct ResultView: View {
                             Text(rule.description.short)
                                 .font(.callout)
                         }
-                        //                        NavigationLink(rule.description.short, value: rule.description)
-                        //                            .font(.callout)
                     }
                 }
                 .foregroundStyle(Color(.gray))
@@ -260,9 +257,6 @@ struct ResultView: View {
                 case .detailed(let d):
                     DetailedView(structuredContent: d)
                         .padding(.bottom, 10)
-                        .onAppear {
-                            //                            print(d)
-                        }
                 default:
                     Text("TO DO")
                         .padding(.bottom, 10)
