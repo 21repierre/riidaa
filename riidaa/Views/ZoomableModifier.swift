@@ -146,7 +146,7 @@ public extension View {
     @ViewBuilder
     func zoomable(
         minZoomScale: CGFloat = 1,
-        doubleTapZoomScale: CGFloat = 3
+        doubleTapZoomScale: CGFloat = 2
     ) -> some View {
         modifier(ZoomableModifier(
             minZoomScale: minZoomScale,

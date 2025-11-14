@@ -39,12 +39,6 @@ struct DictionaryView: View {
         .background(Color(.systemGray6))
         .cornerRadius(10)
         .padding(.horizontal)
-//        .onAppear(perform: {
-//            DispatchQueue.global(qos: .userInitiated).async {
-//                try! await dictionary.fetchUpdate()
-//                print(dictionary.hasUpdate)
-//            }
-//        })
         .task {
             await dictionary.fetchUpdate()
         }

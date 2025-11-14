@@ -180,22 +180,23 @@ extension VolumeListView {
                       let titleName = mokuroJson["title"] as? String else {
                     throw NSError(domain: "VolumeProcessing", code: 3, userInfo: [NSLocalizedDescriptionKey: "Missing 'volume' or 'title' in mokuro \(mokuroFile)"])
                 }
-                
-                // Try to extract the first integer found in volumeName
                 let volumeNum: Int64?
                 
-                // Use regex to find the first sequence of digits in volumeName
-                if let range = volumeName.range(of: "\\d+", options: .regularExpression) {
+                let regex = try! NSRegularExpression(pattern: "\\d+")
+                let matches = regex.matches(in: volumeName, range: NSRange(volumeName.startIndex..., in: volumeName))
+
+                if let lastMatch = matches.last,
+                   let range = Range(lastMatch.range, in: volumeName) {
                     let numberString = String(volumeName[range])
                     volumeNum = Int64(numberString)
                 } else {
-                    // Fallback: your original logic if regex fails
                     let v1 = volumeName.replacingOccurrences(of: titleName, with: "").dropFirst(2)
                     volumeNum = Int64(v1)
                 }
                 guard let volumeNumber = volumeNum else {
                     throw NSError(domain: "VolumeProcessing", code: 4, userInfo: [NSLocalizedDescriptionKey: "Invalid volume number in: \(volumeName)"])
                 }
+                print("volume \(volumeNumber)")
                 
                 try await backgroundContext.perform {
                     for vol in mangaInContext.volumes.array as! [MangaVolumeModel] {
@@ -239,6 +240,9 @@ extension VolumeListView {
                     let img = imagesFolder.appendingPathComponent(img_path)
                     let destImg = volumeDirectory.appendingPathComponent(img_path)
                     try? fileManager.removeItem(at: destImg)
+                    print("Source image path: \(img.path), exists: \(fileManager.fileExists(atPath: img.path))")
+                    print("image path: \(imagesFolder.path), exists: \(fileManager.fileExists(atPath: imagesFolder.path))")
+                    print("Destination image path: \(destImg.path), exists: \(fileManager.fileExists(atPath: destImg.path))")
                     try fileManager.moveItem(at: img, to: destImg)
                     
                     var newPage: MangaPageModel? = nil

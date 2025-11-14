@@ -26,11 +26,36 @@ class SettingsModel: ObservableObject {
     @AppStorage("padding") var padding = 0.0
     @AppStorage("isLTR") var isLTR = false
     
-    #if APPSTORE
+    @Published var ankiInfo: AnkiInfo? {
+        didSet { save(ankiInfo, forKey: "ankiInfo") }
+    }
+    @Published var ankiProfile: AnkiInfo.Profile? {
+        didSet { save(ankiProfile, forKey: "ankiProfile") }
+    }
+    @Published var ankiDeck: AnkiInfo.Deck? {
+        didSet { save(ankiDeck, forKey: "ankiDeck") }
+    }
+    @Published var ankiNoteType: AnkiInfo.NoteType? {
+        didSet { save(ankiNoteType, forKey: "ankiNoteType") }
+    }
+    @Published var ankiFieldWord: String? {
+        didSet { save(ankiFieldWord, forKey: "ankiFieldWord") }
+    }
+    @Published var ankiFieldMeaning: String? {
+        didSet { save(ankiFieldMeaning, forKey: "ankiFieldMeaning") }
+    }
+    @Published var ankiFieldReading: String? {
+        didSet { save(ankiFieldReading, forKey: "ankiFieldReading") }
+    }
+    @Published var ankiFieldExample: String? {
+        didSet { save(ankiFieldExample, forKey: "ankiFieldExample") }
+    }
+    
+#if APPSTORE
     var adult = false
-    #else
+#else
     @AppStorage("adult") var adult = false
-    #endif
+#endif
     
     var backgroundColor: Binding<Color> {
         Binding<Color>(
@@ -64,6 +89,30 @@ class SettingsModel: ObservableObject {
                 self.borderColorAlpha = Double(alpha)
             }
         )
+    }
+    
+    init() {
+        self.ankiInfo = load(forKey: "ankiInfo")
+        self.ankiProfile = load(forKey: "ankiProfile")
+        self.ankiDeck = load(forKey: "ankiDeck")
+        self.ankiNoteType = load(forKey: "ankiNoteType")
+        self.ankiFieldWord = load(forKey: "ankiFieldWord")
+        self.ankiFieldReading = load(forKey: "ankiFieldReading")
+        self.ankiFieldMeaning = load(forKey: "ankiFieldMeaning")
+        self.ankiFieldExample = load(forKey: "ankiFieldExample")
+    }
+    
+    private func load<T: Codable>(forKey key: String) -> T? {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(T.self, from: data)
+    }
+    
+    private func save<T: Codable>(_ value: T?, forKey key: String) {
+        if let value = value, let data = try? JSONEncoder().encode(value) {
+            UserDefaults.standard.set(data, forKey: key)
+        } else {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
     }
     
 }

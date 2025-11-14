@@ -16,6 +16,9 @@ struct MangaReaderParserView: View {
     
     @State private var inflectionDescription: InflectionDescription? //= InflectionRule.continuative.description
     
+    
+    @EnvironmentObject var settings: SettingsModel
+    
     var body: some View {
         ZStack {
             if let description = inflectionDescription {
@@ -65,7 +68,7 @@ struct MangaReaderParserView: View {
                             ScrollView(showsIndicators: false) {
                                 LazyVStack(alignment: .leading) {
                                     ForEach(parsedText[selectedElement].results, id: \.self) { result in
-                                        ResultView(result: result, definition: $inflectionDescription)
+                                        ResultView(result: result, fullSentence: line, definition: $inflectionDescription)
                                     }
                                 }
                             }
@@ -199,18 +202,67 @@ extension MangaReaderParserView {
         ],
         selectedElement: 5
     )
+    .environmentObject(SettingsModel())
 }
 
 
 struct ResultView: View {
     @State var result: TermDeinflection
+    @State var fullSentence: String
     
     @Binding var definition: InflectionDescription?
+    @EnvironmentObject var settings: SettingsModel
     
     var body: some View {
         VStack(alignment: .leading) {
-            Text("\(result.term.term) (\(result.term.reading))")
-                .font(.title)
+            HStack {
+                Text("\(result.term.term) (\(result.term.reading))")
+                    .font(.title)
+                Spacer()
+                
+                Button("Export") {
+                    guard
+                        let profileName = settings.ankiProfile?.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                        let noteTypeName = settings.ankiNoteType?.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                        let deckName = settings.ankiDeck?.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                        return
+                    }
+                    
+                    var fields = ""
+                    
+                    if let fieldWord = settings.ankiFieldWord, let fieldWorldEncoded = fieldWord.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                       let wordEncoded = result.term.term.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                        fields += "&fld\(fieldWorldEncoded)=\(wordEncoded)"
+                    }
+                    if let fieldReading = settings.ankiFieldReading, let fieldReadingEncoded = fieldReading.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                       let readingEncoded = result.term.reading.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                        fields += "&fld\(fieldReadingEncoded)=\(readingEncoded)"
+                    }
+//                    if let fieldMeaning = settings.ankiFieldMeaning, let fieldMeaningEncoded = fieldMeaning.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+//                       let meaningEncoded = result.term..addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+//                        fields += "&fld\(fieldWorldEncoded)=\(wordEncoded)"
+//                    }
+                    if let fieldExample = settings.ankiFieldExample, let fieldExampleEncoded = fieldExample.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                       let exampleEncoded = fullSentence.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                        fields += "&fld\(fieldExampleEncoded)=\(exampleEncoded)"
+                    }
+                    
+                    if fields.isEmpty {
+                        return
+                    }
+                    guard
+                        let url = URL(string: "anki://x-callback-url/addnote?profile=\(profileName)&deck=\(deckName)&type=\(noteTypeName)\(fields)") else {
+                        return
+                    }
+                    UIApplication.shared.open(url, options: [:])
+                }
+                .padding(.vertical, 7)
+                .padding(.horizontal, 10)
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(7)
+                
+            }
             ForEach(result.deinflections, id: \.inflections) { deinflection in
                 HStack(spacing: 0) {
                     Text("🚂")

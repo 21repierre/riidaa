@@ -22,6 +22,9 @@ struct SettingsView: View {
                     NavigationLink(destination: ReaderSettings()) {
                         Text("Reader Settings")
                     }
+                    NavigationLink(destination: AnkiView()) {
+                        Text("Anki Settings")
+                    }
                     #if !APPSTORE
                         Toggle("Enable adult content", isOn: settings.$adult)
                     #endif
