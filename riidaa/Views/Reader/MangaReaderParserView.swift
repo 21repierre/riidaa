@@ -238,10 +238,11 @@ struct ResultView: View {
                        let readingEncoded = result.term.reading.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
                         fields += "&fld\(fieldReadingEncoded)=\(readingEncoded)"
                     }
-//                    if let fieldMeaning = settings.ankiFieldMeaning, let fieldMeaningEncoded = fieldMeaning.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-//                       let meaningEncoded = result.term..addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
-//                        fields += "&fld\(fieldWorldEncoded)=\(wordEncoded)"
-//                    }
+                    if let fieldMeaning = settings.ankiFieldMeaning, let fieldMeaningEncoded = fieldMeaning.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                       let firstMeaning = result.term.parseDefinition.first,
+                       let meaningEncoded = firstMeaning.description.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                        fields += "&fld\(fieldMeaningEncoded)=\(meaningEncoded)"
+                    }
                     if let fieldExample = settings.ankiFieldExample, let fieldExampleEncoded = fieldExample.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                        let exampleEncoded = fullSentence.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
                         fields += "&fld\(fieldExampleEncoded)=\(exampleEncoded)"
@@ -251,7 +252,7 @@ struct ResultView: View {
                         return
                     }
                     guard
-                        let url = URL(string: "anki://x-callback-url/addnote?profile=\(profileName)&deck=\(deckName)&type=\(noteTypeName)\(fields)") else {
+                        let url = URL(string: "anki://x-callback-url/addnote?profile=\(profileName)&deck=\(deckName)&type=\(noteTypeName)&x-success=\("riidaa://anki-callback".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")\(fields)") else {
                         return
                     }
                     UIApplication.shared.open(url, options: [:])
@@ -302,16 +303,22 @@ struct ResultView: View {
                     .roundedCorners(5, corners: .allCorners)
             }
             ForEach(result.term.parseDefinition, id: \.self) { definition in
-                switch (definition) {
-                case .text(let s):
-                    Text(s.content)
-                        .padding(.bottom, 10)
-                case .detailed(let d):
-                    DetailedView(structuredContent: d)
-                        .padding(.bottom, 10)
-                default:
-                    Text("TO DO")
-                        .padding(.bottom, 10)
+                VStack {
+                    switch (definition) {
+                    case .text(let s):
+                        Text(s.content)
+                            .padding(.bottom, 10)
+                    case .detailed(let d):
+                        DetailedView(structuredContent: d)
+                            .padding(.bottom, 10)
+                    default:
+                        Text("TO DO")
+                            .padding(.bottom, 10)
+                    }
+                    
+//                    Text("").onAppear() {
+//                        print("def: \(definition)")
+//                    }
                 }
             }
             

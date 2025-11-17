@@ -92,5 +92,5 @@ struct ListElement: View {
 }
 
 #Preview {
-    ParserList(array: [[]], prefix: "-")
+    ParserList(array: [[.text(StringContent(content: "test")),.text(StringContent(content: "test")),.text(StringContent(content: "test"))]], prefix: "-")
 }

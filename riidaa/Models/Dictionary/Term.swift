@@ -95,7 +95,6 @@ public class TermDB: Hashable, CustomStringConvertible {
                     print("else1: \(x)")
                     return nil
                 }
-                //            print(ret)
                 self.parseDefinition = ret
             } catch {
                 print(error)
@@ -116,7 +115,6 @@ public class TermDB: Hashable, CustomStringConvertible {
             let res = arr.compactMap { elem in
                 parseContent(map: elem)
             }
-//            print("parsed: \(res)")
             
             var result: [[StructuredContent]] = []
             var inlines: [StructuredContent] = []
@@ -136,7 +134,7 @@ public class TermDB: Hashable, CustomStringConvertible {
             if inlines.count > 0 {
                 result.append(inlines)
             }
-//            print("result: \(result)\n-----------------------")
+            //            print("result: \(result)\n-----------------------")
             return .array(result)
         }
         if let submap = map as? [String: Any] {
@@ -149,7 +147,7 @@ public class TermDB: Hashable, CustomStringConvertible {
             }
             guard let content = submap["content"] else { return nil }
             guard let parsedContent = parseContent(map: content) else {
-//                print("sub-submap error? \(map)")
+                //                print("sub-submap error? \(map)")
                 return nil
             }
             
@@ -158,7 +156,7 @@ public class TermDB: Hashable, CustomStringConvertible {
             case "ruby", "rt", "rp", "table", "thead", "tbody", "tfoot", "tr", "div", "li", "details", "summary":
                 if
                     let data = submap["data"] as? [String: Any],
-                   let content = data["content"] as? String,
+                    let content = data["content"] as? String,
                     content == "example-sentence" || content == "extra-info" || content == "forms" || content == "attribution" {
                     return nil
                 }
@@ -210,20 +208,8 @@ public class TermDB: Hashable, CustomStringConvertible {
                         }
                     }
                     return .numberedList(list)
-//                case .container(let container):
-//                    switch container.data {
-//                    case .text(_):
-//                        return .numberedList(StructuredContentList(content: [[container.data]]))
-////                    case .list(let list):
-////                        return .numberedList(list)
-//                    default:
-//                        print("ol>c default ? \(parsedContent)")
-//                        return .numberedList(StructuredContentList(content: [[container.data]]))
-//                    }
                 default:
                     return .numberedList(StructuredContentList(content: [[parsedContent]]))
-//                    print("ol default ? \(parsedContent)")
-//                    return nil
                 }
             case "td", "th":
                 guard let rows = submap["rowSpan"] as? Int,
@@ -237,7 +223,6 @@ public class TermDB: Hashable, CustomStringConvertible {
                 return nil
             }
         }
-//        print("else?? \(type(of: map)) \(map as? [String: Any]) | \(map as? [String: Any?])")
         return nil
     }
 }
@@ -268,15 +253,26 @@ public struct StructuredContentTable: Hashable {
     let rows: Int
 }
 
-public struct StructuredContentList: Hashable {
+public struct StructuredContentList: Hashable, CustomStringConvertible {
     public var id: UUID { UUID() }
     let content: [[StructuredContent]]
     var prefix = "\u{2022}"
+    
+    public var description: String {
+        var ret = ""
+        for x in content {
+            let desc = x.map({ y in
+                y.description
+            }).joined(separator: " ")
+            ret += "\(prefix) \(desc)\n"
+        }
+        return ret
+    }
 }
 
-public indirect enum StructuredContent: Hashable, Identifiable {
+public indirect enum StructuredContent: Hashable, Identifiable, CustomStringConvertible {
     public var id: UUID { UUID() }
-
+    
     case text(StringContent)
     case array([[StructuredContent]])
     
@@ -287,9 +283,57 @@ public indirect enum StructuredContent: Hashable, Identifiable {
     case numberedList(StructuredContentList)
     case list(StructuredContentList)
     case link(LinkContent)
+    
+    public var description: String {
+        switch self {
+        case .text(let stringContent):
+            return stringContent.content
+        case .array(let array):
+            return array.compactMap({ x in
+                let desc = x.compactMap({ y in
+                    let desc = y.description
+                    if desc != "" {
+                        return desc
+                    } else {
+                        return nil
+                    }
+                }).joined(separator: ", ")
+                if desc != "" {
+                    return desc
+                } else {
+                    return nil
+                }
+            }).joined(separator: "\n")
+        case .newline:
+            return "\n"
+        case .container(let structuredContentContainer):
+            return structuredContentContainer.data.description
+        case .inlineContainer(let structuredContentContainer):
+            return structuredContentContainer.data.description
+        case .table(let structuredContentTable):
+            return structuredContentTable.data.description
+        case .numberedList(let structuredContentList):
+            return structuredContentList.description
+        case .list(let structuredContentList):
+            return structuredContentList.description
+        case .link(let linkContent):
+            return linkContent.data.description
+        }
+    }
 }
 
-public enum ContentDefinition: Hashable {
+public enum ContentDefinition: Hashable, CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .text(let stringContent):
+            return stringContent.content
+        case .deinflection(let deinflection):
+            return deinflection.text
+        case .detailed(let structuredContent):
+            return structuredContent.description
+        }
+    }
+    
     public var id: UUID { UUID() }
     
     case text(StringContent)
