@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os
 import CoreData
 
 class AppManager : ObservableObject {
@@ -13,7 +14,9 @@ class AppManager : ObservableObject {
     static let shared = AppManager()
     
     @Published var isLoading = true
-    @Published var dictionaries: [DictionaryDB] = []
+    @Published var dictionaries: [DictionaryDB] = [] {
+        didSet { SQLiteManager.shared.setInstalledDictionaries(dictionaries) }
+    }
 
     @Published var deleting: Set<Int64> = []
     @Published var purging: PurgeProgress? = nil
@@ -27,7 +30,14 @@ class AppManager : ObservableObject {
         deleting.insert(id)
 
         DispatchQueue.global(qos: .userInitiated).async {
-            try? SQLiteManager.shared.deleteDictionary(dictionaryId: id)
+            do {
+                try SQLiteManager.shared.deleteDictionary(dictionaryId: id)
+            } catch {
+                Logger.dictionary.error("Failed to delete dictionary: \(error.localizedDescription, privacy: .public)")
+                DispatchQueue.main.async { self.deleting.remove(id) }
+                self.report(error: "Could not delete this dictionary: \(error.localizedDescription)")
+                return
+            }
             DispatchQueue.main.async {
                 self.dictionaries.removeAll { $0.id == id }
                 self.deleting.remove(id)
@@ -50,6 +60,10 @@ class AppManager : ObservableObject {
 
     private let purgeQueue = DispatchQueue(label: "dev.repierre.riidaa.purge", qos: .utility)
 
+    func waitForPendingPurge() {
+        purgeQueue.sync {}
+    }
+
     func setProgress(_ progress: DictionaryProgress?, for id: Int64?) {
         DispatchQueue.main.async {
             guard let id = id else {
@@ -67,7 +81,11 @@ class AppManager : ObservableObject {
 
     func report(error: String?) {
         DispatchQueue.main.async {
-            self.lastError = error
+            if let error = error, let existing = self.lastError, !existing.contains(error) {
+                self.lastError = existing + "\n\n" + error
+            } else {
+                self.lastError = error
+            }
             self.preparing = nil
         }
     }

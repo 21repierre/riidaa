@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import os
 import CoreData
 
 struct DictionariesView: View {
@@ -63,12 +64,16 @@ struct DictionariesView: View {
                 Image(systemName: "plus")
             }
         }
-        .fileImporter(isPresented: $isPickingDictionary, allowedContentTypes: [.zip]) { result in
+        .fileImporter(
+            isPresented: $isPickingDictionary,
+            allowedContentTypes: [.zip],
+            allowsMultipleSelection: true
+        ) { result in
             switch result {
-            case .success(let file):
-                processZipFile(path: file)
+            case .success(let files):
+                importer.importArchives(at: files.sorted { $0.lastPathComponent < $1.lastPathComponent })
             case .failure(let error):
-                print("error while picking dictionary file: \(error)")
+                Logger.dictionary.error("Could not open the picked dictionary: \(error.localizedDescription, privacy: .public)")
             }
         }
         .alert(
@@ -82,6 +87,8 @@ struct DictionariesView: View {
         )
     }
 
+    private var importer: DictionaryImporter { DictionaryImporter(appManager: appManager) }
+
     /// Downloads `downloadUrl` and re-imports it, replacing the existing copy.
     func updateDictionary(_ dictionary: DictionaryDB) {
         guard let downloadUrl = dictionary.downloadUrl, let url = URL(string: downloadUrl) else {
@@ -90,7 +97,7 @@ struct DictionariesView: View {
         }
 
         let replacing = dictionary.id
-        appManager.setProgress(DictionaryProgress(message: "Downloading…", value: 0, total: 0), for: replacing)
+        appManager.setProgress(DictionaryProgress(message: "Downloading\u{2026}", value: 0, total: 0), for: replacing)
 
         Task {
             do {
@@ -101,7 +108,7 @@ struct DictionariesView: View {
                 try FileManager.default.moveItem(at: temporary, to: archive)
 
                 await MainActor.run {
-                    self.processZipFile(path: archive, securityScoped: false, replacing: replacing)
+                    self.importer.importArchive(at: archive, securityScoped: false, replacing: replacing)
                 }
             } catch {
                 appManager.setProgress(nil, for: replacing)
@@ -110,248 +117,6 @@ struct DictionariesView: View {
         }
     }
 
-    func processZipFile(path: URL, securityScoped: Bool = true, replacing: Int64? = nil) {
-        // Snapshot taken here
-        let installedSnapshot = appManager.dictionaries
-        DispatchQueue.global(qos: .userInitiated).async {
-            let fileManager = FileManager.default
-            let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("dictionaries")
-            let dicDirectory = documents.appendingPathComponent(UUID().uuidString)
-
-            // Progress goes to AppManager, which outlives this screen.
-            var done = 0
-            var total = 0
-            var reportingId: Int64? = replacing
-            func report(_ message: String) {
-                appManager.setProgress(
-                    DictionaryProgress(message: message, value: done, total: total),
-                    for: reportingId
-                )
-            }
-
-            // Nothing reads these again once they are in SQLite; jitendex unpacks to 500 MB.
-            defer {
-                try? fileManager.removeItem(at: dicDirectory)
-                if !securityScoped {
-                    // riidaa downloaded this one, so it owns the file too.
-                    try? fileManager.removeItem(at: path)
-                }
-            }
-
-            do {
-                let scoped = securityScoped && path.startAccessingSecurityScopedResource()
-                if securityScoped && !scoped {
-                    throw NSError(domain: "DictionaryImport", code: 0, userInfo: [NSLocalizedDescriptionKey: "Permission denied"])
-                }
-                defer {
-                    if scoped {
-                        path.stopAccessingSecurityScopedResource()
-                    }
-                }
-                
-                report("Unpacking…")
-                try fileManager.createDirectory(at: dicDirectory, withIntermediateDirectories: true)
-                try fileManager.unzipItem(at: path, to: dicDirectory)
-                
-                let dicContent = try fileManager.contentsOfDirectory(at: dicDirectory, includingPropertiesForKeys: nil)
-                total = dicContent.count
-                report("Processing dictionary…")
-                
-                guard let fileContent = try? Data(contentsOf: dicDirectory.appendingPathComponent("index.json")) else {
-                    throw NSError(domain: "DictionaryImport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not find dictionary index.json"])
-                }
-                let dicJson = try JSONSerialization.jsonObject(with: fileContent)
-                guard let dicJson = dicJson as? [String: Any] else {
-                    throw NSError(domain: "DictionaryImport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid file format"])
-                }
-                guard let revision = dicJson["revision"] as? String,
-                      let title = dicJson["title"] as? String
-                else {
-                    throw NSError(domain: "DictionaryImport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Missing mandatory properties"])
-                }
-                let sequenced = dicJson["sequenced"] as? Bool
-                let format = dicJson["format"] as? Int
-                let author = dicJson["author"] as? String
-                let isUpdatable = dicJson["isUpdatable"] as? Bool
-                let indexUrl = dicJson["indexUrl"] as? String
-                let downloadUrl = dicJson["downloadUrl"] as? String
-                let url = dicJson["url"] as? String
-                let description = dicJson["description"] as? String
-                let attribution = dicJson["attribution"] as? String
-                let sourceLanguage = dicJson["sourceLanguage"] as? String
-                let targetLanguage = dicJson["targetLanguage"] as? String
-                let frequencyMode = dicJson["frequencyMode"] as? String
-
-                let alreadyInstalled = installedSnapshot.first { existing in
-                    if existing.id == replacing { return false }
-                    if let indexUrl = indexUrl, let other = existing.indexUrl, !indexUrl.isEmpty {
-                        return other == indexUrl
-                    }
-                    return existing.title == title
-                }
-                if let existing = alreadyInstalled {
-                    let action = replacing == nil
-                        ? "Use Update on it instead, or delete it first."
-                        : "Delete one of them first."
-                    throw NSError(domain: "DictionaryImport", code: 4, userInfo: [
-                        NSLocalizedDescriptionKey: existing.revision == revision
-                            ? "\(existing.title) is already installed."
-                            : "\(existing.title) is already installed (revision \(existing.revision)). \(action)"
-                    ])
-                }
-
-                
-                var installed: DictionaryDB? = nil
-                // Any throw past this point must take the row with it, or a half-imported
-                // dictionary stays installed and feeds partial results into every lookup.
-                defer {
-                    if let installed = installed {
-                        try? SQLiteManager.shared.deleteDictionary(dictionaryId: installed.id)
-                        DispatchQueue.main.async {
-                            appManager.dictionaries.removeAll { $0.id == installed.id }
-                        }
-                        appManager.purgeOrphanedEntries()
-                    }
-                }
-
-                let dictionaryOrNil = SQLiteManager.shared.insertDictionary(revision: revision, title: title, sequenced: sequenced ?? false, format: format ?? 3, author: author, isUpdatable: isUpdatable ?? false, indexUrl: indexUrl, downloadUrl: downloadUrl, url: url, description: description, attribution: attribution, sourceLanguage: sourceLanguage, targetLanguage: targetLanguage, frequencyMode: frequencyMode)
-                guard let dictionary = dictionaryOrNil else {
-                    throw NSError(domain: "DictionaryImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Error saving dictionary"])
-                }
-                installed = dictionary
-                // An update keeps reporting against the row the user can see
-                if replacing == nil {
-                    reportingId = dictionary.id
-                    DispatchQueue.main.async { appManager.dictionaries.append(dictionary) }
-                }
-                report("Importing…")
-                
-                
-                done += 1
-                report("Processing dictionary…")
-                
-                
-                var importedTerms = 0
-                var importedMeta = 0
-
-                var i = 1
-                while true {
-                    
-                    let filename = "term_bank_\(i).json"
-                    let filepath = dicDirectory.appending(component: filename)
-                    
-                    guard let fileContent = try? Data(contentsOf: filepath) else {
-                        break
-                    }
-                    try autoreleasepool {
-                        let termsJson = try? JSONSerialization.jsonObject(with: fileContent)
-                        guard let termsJson = termsJson as? [[Any]] else {
-                            throw NSError(domain: "DictionaryImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Error decoding terms"])
-                        }
-                        let insertTerms: [TermInsertion] = termsJson.compactMap({ t in
-                            guard let term = t[0] as? String,
-                                  let reading = t[1] as? String,
-                                  let wordTypesJson = t[3] as? String,
-                                  let score = t[4] as? Int64,
-                                  let definitions = t[5] as? [Any],
-                                  let sequence  = t[6] as? Int64,
-                                  let termTagsJson = t[7]  as? String
-                            else {
-                                return nil
-                            }
-                            guard let definitionsEncoded = try? JSONSerialization.data(withJSONObject: definitions, options: []) else {
-                                return nil
-                            }
-                            let definitionTags = t[2] as? String ?? ""
-                            return TermInsertion(term: term, reading: reading, definitionTags: definitionTags, wordTypes: wordTypesJson, score: score, definitions: definitionsEncoded, sequence: sequence, termTags: termTagsJson, dictionaryId: dictionary.id)
-                        })
-                        guard SQLiteManager.shared.insertTerms(termsInsert: insertTerms) != nil else {
-                            throw NSError(domain: "DictionaryImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Error saving terms"])
-                        }
-                        importedTerms += insertTerms.count
-                        
-                        i += 1
-                        
-                        done += 1
-                        report("Processing dictionary…")
-                    }
-                }
-
-                // Pitch and frequency dictionaries ship no term_bank files at all.
-                var m = 1
-                while true {
-                    let filename = "term_meta_bank_\(m).json"
-                    let filepath = dicDirectory.appending(component: filename)
-
-                    guard let fileContent = try? Data(contentsOf: filepath) else {
-                        break
-                    }
-                    try autoreleasepool {
-                        let metaJson = try? JSONSerialization.jsonObject(with: fileContent)
-                        guard let metaJson = metaJson as? [[Any]] else {
-                            throw NSError(domain: "DictionaryImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Error decoding term metadata"])
-                        }
-                        let insertMeta: [TermMetaInsertion] = metaJson.compactMap({ t in
-                            guard t.count >= 3,
-                                  let term = t[0] as? String,
-                                  let mode = t[1] as? String,
-                                  let parsed = TermMetaParser.parse(mode: mode, data: t[2]),
-                                  let dataEncoded = try? JSONSerialization.data(withJSONObject: t[2], options: [.fragmentsAllowed])
-                            else {
-                                return nil
-                            }
-                            return TermMetaInsertion(term: term, reading: parsed.reading, mode: mode, data: dataEncoded, dictionaryId: dictionary.id)
-                        })
-                        guard SQLiteManager.shared.insertTermMeta(metaInsert: insertMeta) != nil else {
-                            throw NSError(domain: "DictionaryImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Error saving term metadata"])
-                        }
-                        importedMeta += insertMeta.count
-
-                        m += 1
-
-                        done += 1
-                        report("Processing dictionary…")
-                    }
-                }
-
-                if i == 1 && m == 1 {
-                    throw NSError(domain: "DictionaryImport", code: 3, userInfo: [NSLocalizedDescriptionKey: "This dictionary contains no term or metadata banks."])
-                }
-                
-                var summary: [String] = []
-                if importedTerms > 0 {
-                    summary.append("\(importedTerms.formatted()) entries")
-                }
-                if importedMeta > 0 {
-                    summary.append("\(importedMeta.formatted()) pitch/frequency entries")
-                }
-                let processedMessage = "Imported \(title)\n\(summary.joined(separator: " and "))."
-
-                // Removed only once the replacement is safely in, so a failed update can't
-                // leave the user with nothing.
-                if let replacing = replacing {
-                    try SQLiteManager.shared.deleteDictionary(dictionaryId: replacing)
-                }
-
-                DispatchQueue.main.async {
-                    if let replacing = replacing {
-                        appManager.dictionaries.removeAll { $0.id == replacing }
-                        appManager.dictionaries.append(dictionary)
-                    }
-                    appManager.setProgress(nil, for: dictionary.id)
-                    appManager.setProgress(nil, for: replacing)
-                }
-                installed = nil
-                print("riidaa: \(processedMessage)")
-                appManager.purgeOrphanedEntries()
-            } catch {
-                appManager.setProgress(nil, for: reportingId)
-                appManager.report(error: error.localizedDescription)
-                return
-            }
-        }
-    }
-    
 }
 
 #Preview {
