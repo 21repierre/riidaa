@@ -135,10 +135,11 @@ public struct MangaReader: View {
                 }
                 .onChange(of: currentPage) { newPage in
                     self.currentLine = nil
-                    if pages[currentPage].read_at == nil {
-                        pages[currentPage].read_at = NSDate()
+                    if pages.indices.contains(newPage), pages[newPage].read_at == nil {
+                        pages[newPage].read_at = NSDate()
                     }
                     volume.lastReadPage = Int64(newPage)
+                    volume.last_read_at = NSDate()
                     DispatchQueue.main.async {
                         CoreDataManager.shared.saveContext()
                     }

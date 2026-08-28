@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import os
 import CoreData
 import UIKit
 
@@ -77,19 +78,22 @@ extension MangaModel {
         }
     }
     
+    /// Answers on the main queue.
     public func downloadCover(url: String, completion: @escaping (Bool) -> Void) {
-        let url = URL(string: url)
-        URLSession.shared.dataTask(with: url!) { data, response, error in
-            guard let data = data, error == nil else {
-                completion(false)
-                return
-            }
-            self.cover = data
+        guard let url = URL(string: url) else {
+            DispatchQueue.main.async { completion(false) }
+            return
+        }
+        URLSession.shared.dataTask(with: url) { data, _, error in
             DispatchQueue.main.async {
+                guard let data = data, error == nil else {
+                    completion(false)
+                    return
+                }
+                self.cover = data
                 completion(true)
             }
         }.resume()
-        
     }
     
     static func fetchMangaAnilistIDs(moc: NSManagedObjectContext) -> Set<Int64> {
@@ -98,7 +102,7 @@ extension MangaModel {
             let mangas = try moc.fetch(fetchRequest)
             return Set(mangas.compactMap { $0.anilist_id?.int64Value })
         } catch {
-            print("Error fetching mangas: \(error)")
+            Logger.library.error("Failed to fetch mangas: \(error.localizedDescription, privacy: .public)")
             return []
         }
     }

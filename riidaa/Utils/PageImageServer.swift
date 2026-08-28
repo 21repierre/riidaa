@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import os
 import Network
 import UIKit
 
@@ -67,7 +68,7 @@ final class PageImageServer {
                 case .ready:
                     guardian.resume(continuation, with: listener.port)
                 case .failed(let error):
-                    print("PageImageServer failed: \(error)")
+                    Logger.reader.error("Page image server failed: \(error.localizedDescription, privacy: .public)")
                     guardian.resume(continuation, with: nil)
                 case .waiting:
                     // Transient; the timeout below covers a listener that never recovers.

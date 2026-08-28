@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import os
 import ZIPFoundation
 
 public enum UpdateState: Codable {
@@ -94,7 +95,7 @@ extension DictionaryDB {
             
             self.hasUpdate = .upToDate
         } catch {
-            print("Failed to fetch update:", error)
+            Logger.dictionary.error("Failed to fetch update: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -144,7 +145,7 @@ extension DictionaryDB {
             self.hasUpdate = .upToDate
             
         } catch {
-            print("Failed to update dictionary:", error)
+            Logger.dictionary.error("Failed to update dictionary: \(error.localizedDescription, privacy: .public)")
             throw error
         }
     }
