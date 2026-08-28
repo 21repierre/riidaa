@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import os
 import CoreData
 
 struct StatsView: View {
@@ -31,7 +32,11 @@ struct StatsView: View {
             Spacer()
         }
         .onAppear {
-            try? fetchPageRead()
+            do {
+                try fetchPageRead()
+            } catch {
+                Logger.library.error("Failed to load reading stats: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
     

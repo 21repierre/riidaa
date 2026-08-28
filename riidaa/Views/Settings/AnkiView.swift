@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import os
 
 struct AnkiView: View {
     
@@ -96,7 +97,7 @@ struct AnkiView: View {
         }
         .navigationTitle("Reader")
         .onOpenURL { url in
-            if url.scheme == "riidaa" {
+            if url.scheme == AnkiExport.callbackScheme {
                 if url.host() == "anki-setup" {
                     let pasteboardType = "net.ankimobile.json"
                     if let data = UIPasteboard.general.data(forPasteboardType: pasteboardType) {
@@ -117,7 +118,7 @@ struct AnkiView: View {
                                 }
                             }
                         } catch {
-                            print("failed decoding Anki infos: \(error)")
+                            Logger.anki.error("Failed to decode Anki info: \(error.localizedDescription, privacy: .public)")
                             
                         }
                     }
@@ -139,7 +140,7 @@ struct AnkiView: View {
     }
     
     func fetchAnkiDecks() {
-        guard let url = URL(string: "anki://x-callback-url/infoForAdding?x-success=\("riidaa://anki-setup".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") else {
+        guard let url = URL(string: "anki://x-callback-url/infoForAdding?x-success=\("\(AnkiExport.callbackScheme)://anki-setup".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") else {
             return
         }
         UIApplication.shared.open(url, options: [:])

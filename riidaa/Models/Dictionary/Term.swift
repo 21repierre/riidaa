@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import os
 import SwiftUI
 
 public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
@@ -30,7 +31,7 @@ public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
     let sequenceNumber: Int64
     let termTags: [String]
     let dictionary: DictionaryDB
-    let exportedToAnki: Bool
+    @Published var exportedToAnki: Bool
     
     @Published var parseDefinition: [ContentDefinition] = []
     
@@ -63,15 +64,15 @@ public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
                     }
                     if let deinflection = x as? [Any] {
                         guard deinflection.count == 2 else {
-                            print("error deinflect1: \(x)")
+                            Logger.dictionary.debug("Unhandled definition element: \(String(describing: x))")
                             return nil
                         }
                         guard let uninflected = deinflection[0] as? String else {
-                            print("error deinflect2: \(x)")
+                            Logger.dictionary.debug("Unhandled definition element: \(String(describing: x))")
                             return nil
                         }
                         guard let inflectionRulesStr = deinflection[1] as? [String] else {
-                            print("error deinflect3: \(x)")
+                            Logger.dictionary.debug("Unhandled definition element: \(String(describing: x))")
                             return nil
                         }
                         let inflectionRules = inflectionRulesStr.compactMap { ir in
@@ -81,12 +82,12 @@ public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
                     }
                     if let detailedDef = x as? [String: Any] {
                         guard let type = detailedDef["type"] as? String else {
-                            print("error detailed without type")
+                            Logger.dictionary.debug("Detailed definition with no type")
                             return nil
                         }
                         if type == "text" {
                             guard let text = detailedDef["text"] as? String else {
-                                print("Error text without text")
+                                Logger.dictionary.debug("Text definition with no text")
                                 return nil
                             }
                             return .text(StringContent(content: text))
@@ -97,12 +98,12 @@ public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
                             return .detailed(parsedContent)
                         }
                     }
-                    print("else1: \(x)")
+                    Logger.dictionary.debug("Unrecognised definition shape: \(String(describing: x))")
                     return nil
                 }
                 DispatchQueue.main.async { self.parseDefinition = ret }
             } catch {
-                print(error)
+                Logger.dictionary.debug("Definition decoding failed: \(error.localizedDescription)")
                 DispatchQueue.main.async { self.parseDefinition = [.text(StringContent(content: "\(error)"))] }
             }
         }
@@ -143,7 +144,7 @@ public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
         }
         if let submap = map as? [String: Any] {
             guard let tag = submap["tag"] as? String else {
-                print("submap without tag: \(submap)")
+                Logger.dictionary.debug("Structured content with no tag: \(String(describing: submap))")
                 return nil
             }
             if tag == "br" {
@@ -224,7 +225,7 @@ public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
                 guard let href = submap["href"] as? String else {return nil}
                 return .link(LinkContent(href: href, data: parsedContent))
             default:
-                print("default: ", tag)
+                Logger.dictionary.debug("Unhandled structured content tag: \(tag)")
                 return nil
             }
         }

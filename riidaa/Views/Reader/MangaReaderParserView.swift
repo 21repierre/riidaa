@@ -229,6 +229,7 @@ struct ResultView: View {
     @Binding var definition: InflectionDescription?
     @EnvironmentObject var settings: SettingsModel
 
+    @State private var exported = false
     @State private var meta: [TermMetaDB] = []
     @State private var audioPlayer: AVPlayer? = nil
     @State private var audioAvailable = false
@@ -248,6 +249,11 @@ struct ResultView: View {
             HStack {
                 Text("\(result.term.term) (\(result.term.reading))")
                     .font(.title)
+                if exported {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .accessibilityLabel("Already exported to Anki")
+                }
                 if let audioURL = audioURL {
                     Button {
                         play(audioURL)
@@ -338,6 +344,7 @@ struct ResultView: View {
         }
         .onAppear {
             let term = result.term
+            exported = result.term.exportedToAnki
             if settings.wordAudioEnabled, let candidate = WordAudio.url(term: term.term, reading: term.reading) {
                 WordAudio.checkAvailability(of: candidate) { available in
                     self.audioAvailable = available
@@ -351,18 +358,23 @@ struct ResultView: View {
             }
         }
         .onOpenURL { url in
-            if url.scheme == "riidaa", url.host() == "anki-callback" {
+            if url.scheme == AnkiExport.callbackScheme, url.host() == "anki-callback" {
                 PageImageServer.shared.stop()
             }
-            guard url.scheme == "riidaa",
+            guard url.scheme == AnkiExport.callbackScheme,
                   url.host() == "anki-callback",
                   let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                  let termParam = components.queryItems?.first(where: { $0.name == "term" })?.value,
-                  let termHash = Int(termParam) else {
+                  let term = components.queryItems?.first(where: { $0.name == "term" })?.value,
+                  let reading = components.queryItems?.first(where: { $0.name == "reading" })?.value
+            else {
                 return
             }
-            if termHash == result.term.hashValue {
-                // TODO: Save exported state
+            if term == result.term.term, reading == result.term.reading {
+                result.term.exportedToAnki = true
+                exported = true
+                SQLiteManager.shared.markExported(
+                    term: result.term.term, reading: result.term.reading
+                )
             }
 
         }
@@ -370,6 +382,10 @@ struct ResultView: View {
 
     /// Async because the loopback listener must be up and its port known before the URL can
     /// name it.
+    private func escaped(_ text: String) -> String {
+        text.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? text
+    }
+
     private func export() async {
         guard let export = settings.ankiExport else { return }
 
@@ -389,7 +405,9 @@ struct ResultView: View {
         )
         guard let url = export.addNoteURL(
             context: context,
-            callback: "riidaa://anki-callback?term=\(result.term.hashValue)"
+            callback: AnkiExport.callbackURL(
+                "term=\(escaped(result.term.term))&reading=\(escaped(result.term.reading))"
+            )
         ) else {
             PageImageServer.shared.stop()
             return
