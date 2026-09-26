@@ -240,6 +240,17 @@ struct AnkiNoteContext {
 /// Builds the `anki://x-callback-url/addnote` URL. Media can't be embedded: AnkiMobile
 /// downloads a field whose value is a URL to an image or audio file, so it travels by reference.
 struct AnkiExport {
+
+    /// Taken from Info.plist so a dev build with its own scheme still gets its callbacks.
+    static var callbackScheme: String {
+        let types = Bundle.main.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]]
+        return types?.compactMap { ($0["CFBundleURLSchemes"] as? [String])?.first }.first ?? "riidaa"
+    }
+
+    static func callbackURL(_ query: String) -> String {
+        "\(callbackScheme)://anki-callback?\(query)"
+    }
+
     let profile: String
     let deck: String
     let noteType: String
