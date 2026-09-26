@@ -216,6 +216,7 @@ extension VolumeListView {
 
             var volumeFailures: [String] = []
             for mokuroFile in mokuroFiles {
+                var volumeDirectory: URL? = nil
                 do {
                     let mokuroData = try Data(contentsOf: mokuroFile)
                     guard let mokuroJson = try JSONSerialization.jsonObject(with: mokuroData, options: []) as? [String: Any] else {
@@ -274,9 +275,10 @@ extension VolumeListView {
                     }
                 
                     let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("mangas")
-                    let volumeDirectory = documents.appendingPathComponent(mangaInContext.id.uuidString).appendingPathComponent(String(newVolume.number))
+                    let pagesDirectory = documents.appendingPathComponent(mangaInContext.id.uuidString).appendingPathComponent(String(newVolume.number))
                 
-                    try fileManager.createDirectory(at: volumeDirectory, withIntermediateDirectories: true)
+                    try fileManager.createDirectory(at: pagesDirectory, withIntermediateDirectories: true)
+                    volumeDirectory = pagesDirectory
                 
                     for (i, page) in pages.enumerated() {
                         guard let img_path = page["img_path"] as? String,
@@ -285,7 +287,7 @@ extension VolumeListView {
                             throw NSError(domain: "VolumeProcessing", code: 6, userInfo: [NSLocalizedDescriptionKey: "Missing image infos"])
                         }
                         let img = imagesFolder.appendingPathComponent(img_path)
-                        let destImg = volumeDirectory.appendingPathComponent(img_path)
+                        let destImg = pagesDirectory.appendingPathComponent(img_path)
                         try? fileManager.removeItem(at: destImg)
                         try fileManager.moveItem(at: img, to: destImg)
                     
@@ -331,13 +333,20 @@ extension VolumeListView {
                             )
                         }
                     }
+
+                    // Saved per volume so a later failure can roll back only its own volume.
+                    try await backgroundContext.perform {
+                        try backgroundContext.save()
+                    }
                 } catch {
+                    await backgroundContext.perform {
+                        backgroundContext.rollback()
+                    }
+                    if let volumeDirectory = volumeDirectory {
+                        try? fileManager.removeItem(at: volumeDirectory)
+                    }
                     volumeFailures.append("\(mokuroFile.lastPathComponent): \(error.localizedDescription)")
                 }
-            }
-            
-            try await backgroundContext.perform {
-                try backgroundContext.save()
             }
 
             if !volumeFailures.isEmpty {
