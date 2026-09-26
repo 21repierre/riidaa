@@ -98,11 +98,9 @@ struct MangaAddResultView : View {
                         newManga.added_at = NSDate()
                         newManga.anilist_id = manga.id as NSNumber
                         newManga.title = manga.title.wrappedValue
-                        newManga.downloadCover(url: manga.wrappedValue.coverImage, completion: { result in
-                            if result {
-                                CoreDataManager.shared.saveContext()
-                                dismiss()
-                            }
+                        newManga.downloadCover(url: manga.wrappedValue.coverImage, completion: { _ in
+                            CoreDataManager.shared.saveContext()
+                            dismiss()
                         })
                     }) {
                         VStack(alignment: .leading,spacing: 0) {
@@ -181,11 +179,9 @@ struct MangaAddResultView : View {
                         newManga.added_at = NSDate()
         newManga.anilist_id = manga.id as NSNumber
         newManga.title = manga.title
-        newManga.downloadCover(url: manga.coverImage) { result in
-            if result {
-                CoreDataManager.shared.saveContext()
-                dismiss()
-            }
+        newManga.downloadCover(url: manga.coverImage) { _ in
+            CoreDataManager.shared.saveContext()
+            dismiss()
         }
     }
     

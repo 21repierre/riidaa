@@ -6,12 +6,16 @@
 //
 
 import Foundation
+import os
 import SQLite
 typealias Expression = SQLite.Expression
 
 class SQLiteManager {
     static let shared = SQLiteManager()
     private var db: Connection?
+    /// Its own connection so a running import cannot block lookups; WAL lets it keep reading
+    /// the last committed snapshot while the writer holds a transaction.
+    private var reader: Connection?
 
     // Table Definitions
     let dictionaries = Table("dictionaries")
@@ -52,17 +56,47 @@ class SQLiteManager {
     let metaReading = SQLite.Expression<String>("metaReading")
     let metaData = SQLite.Expression<Data>("data")
 
-    /// Every statement runs here
     private let access = DispatchQueue(label: "dev.repierre.riidaa.sqlite")
+    private let readAccess = DispatchQueue(label: "dev.repierre.riidaa.sqlite.read", attributes: .concurrent)
+
+    enum DatabaseError: LocalizedError {
+        case unavailable
+
+        var errorDescription: String? { "The dictionary database could not be opened." }
+    }
 
     private func perform<T>(_ work: () throws -> T) rethrows -> T {
         try access.sync(execute: work)
     }
 
+    private func performRead<T>(_ work: () throws -> T) rethrows -> T {
+        try readAccess.sync(execute: work)
+    }
+
+    /// Mirrored here so lookups don't read published UI state off their own thread. Its own
+    /// lock rather than `access`, which an import can hold for the length of a bank.
+    private let installedLock = NSLock()
+    private var installed: [Int64: DictionaryDB] = [:]
+
+    func setInstalledDictionaries(_ dictionaries: [DictionaryDB]) {
+        installedLock.lock()
+        installed = Dictionary(dictionaries.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
+        installedLock.unlock()
+    }
+
+    private func installedDictionaries() -> [Int64: DictionaryDB] {
+        installedLock.lock()
+        defer { installedLock.unlock() }
+        return installed
+    }
+
     private init() {
+        let path = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first!
+        let databaseFile = "\(path)/dictionaries.sqlite3"
         do {
-            let path = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first!
-            db = try Connection("\(path)/dictionaries.sqlite3")
+            db = try Connection(databaseFile)
+            try db?.run("PRAGMA journal_mode=WAL")
+            db?.busyTimeout = 5
 
             try db?.run(dictionaries.create(ifNotExists: true) { t in
                 t.column(id, primaryKey: .autoincrement)
@@ -111,7 +145,7 @@ class SQLiteManager {
             try db?.run(termMeta.createIndex(term, ifNotExists: true))
             try db?.run(termMeta.createIndex(dictionaryId, ifNotExists: true))
         } catch {
-            print("Database setup failed: \(error)")
+            Logger.database.error("Database setup failed: \(error.localizedDescription, privacy: .public)")
         }
 
         do {
@@ -123,7 +157,15 @@ class SQLiteManager {
         do {
             try db?.run("PRAGMA wal_checkpoint(TRUNCATE)")
         } catch {
-            print("checkpoint failed: \(error)")
+            Logger.database.error("Checkpoint failed: \(error.localizedDescription, privacy: .public)")
+        }
+
+        do {
+            // Opened after the writer, which creates the database and its WAL.
+            reader = try Connection(databaseFile, readonly: true)
+            reader?.busyTimeout = 5
+        } catch {
+            Logger.database.error("Read connection unavailable: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -156,7 +198,7 @@ class SQLiteManager {
                     ))
                 }
             } catch {
-                print("Failed to load dictionaries: \(error)")
+                Logger.database.error("Failed to load dictionaries: \(error.localizedDescription, privacy: .public)")
             }
             return loaded
         }
@@ -165,7 +207,7 @@ class SQLiteManager {
     /// Removes the dictionary itself and nothing else.
     func deleteDictionary(dictionaryId: Int64) throws {
         try perform {
-            guard let db = db else { return }
+            guard let db = db else { throw DatabaseError.unavailable }
             try db.run(dictionaries.filter(id == dictionaryId).delete())
         }
     }
@@ -182,9 +224,15 @@ class SQLiteManager {
         let total: Int = perform {
             guard let db = db else { return 0 }
             return tables.reduce(0) { running, table in
-                let raw = try? db.scalar("SELECT count(*) FROM \(table) WHERE \(orphanCondition)")
-                guard let value = raw as? Int64 else { return running }
-                return running + Int(value)
+                do {
+                    guard let value = try db.scalar("SELECT count(*) FROM \(table) WHERE \(orphanCondition)") as? Int64 else {
+                        return running
+                    }
+                    return running + Int(value)
+                } catch {
+                    Logger.database.error("Failed to count orphaned entries in \(table, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                    return running
+                }
             }
         }
         guard total > 0 else { return }
@@ -202,7 +250,7 @@ class SQLiteManager {
                         try db.run(statement, batchSize)
                         return db.changes
                     } catch {
-                        print("purge failed: \(error)")
+                        Logger.database.error("Purge failed: \(error.localizedDescription, privacy: .public)")
                         return 0
                     }
                 }
@@ -249,7 +297,7 @@ class SQLiteManager {
                 return DictionaryDB(id: dicId, revision: revision, title: title, sequenced: sequenced, format: format, author: author, isUpdatable: isUpdatable, indexUrl: indexUrl, downloadUrl: downloadUrl, url: url, description: description, attribution: attribution, sourceLanguage: sourceLanguage, targetLanguage: targetLanguage, frequencyMode: frequencyMode)
             }
         } catch {
-            print("error: \(error)")
+            Logger.database.error("Failed to insert dictionary: \(error.localizedDescription, privacy: .public)")
         }
         
         return nil
@@ -276,7 +324,7 @@ class SQLiteManager {
                 }
                 return inserted
             } catch {
-                print("error: \(error)")
+                Logger.database.error("Failed to insert rows: \(error.localizedDescription, privacy: .public)")
                 return nil
             }
         }
@@ -315,19 +363,21 @@ class SQLiteManager {
     }
 
     func findTermMeta(texts: [String]) -> [TermMetaDB] {
-        perform { findTermMetaLocked(texts: texts) }
+        guard let reader = reader else {
+            return perform { findTermMetaLocked(texts: texts, on: db) }
+        }
+        return performRead { findTermMetaLocked(texts: texts, on: reader) }
     }
 
-    private func findTermMetaLocked(texts: [String]) -> [TermMetaDB] {
+    private func findTermMetaLocked(texts: [String], on connection: Connection?) -> [TermMetaDB] {
         var result: [TermMetaDB] = []
-        guard let db = db else { return result }
+        guard let db = connection else { return result }
 
         let query = termMeta.filter(texts.contains(self.term))
+        let dictionaries = installedDictionaries()
         do {
             for row in try db.prepare(query) {
-                guard let dictionary = AppManager.shared.dictionaries.first(where: {
-                    $0.id == row[self.dictionaryId]
-                }) else {
+                guard let dictionary = dictionaries[row[self.dictionaryId]] else {
                     continue
                 }
                 guard let raw = try? JSONSerialization.jsonObject(with: row[metaData]),
@@ -344,29 +394,45 @@ class SQLiteManager {
                 )
             }
         } catch {
-            print("error: \(error)")
+            Logger.database.error("Term metadata lookup failed: \(error.localizedDescription, privacy: .public)")
         }
         return result
     }
 
-    func findTerms(texts: [String]) -> [TermDB] {
-        perform { findTermsLocked(texts: texts) }
+    func markExported(term exported: String, reading exportedReading: String) {
+        perform {
+            guard let db = db else { return }
+            do {
+                try db.run(
+                    terms.filter(self.term == exported && self.reading == exportedReading)
+                        .update(exportedToAnki <- true)
+                )
+            } catch {
+                Logger.database.error("Failed to record an Anki export: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
 
-    private func findTermsLocked(texts: [String]) -> [TermDB] {
+    func findTerms(texts: [String]) -> [TermDB] {
+        guard let reader = reader else {
+            return perform { findTermsLocked(texts: texts, on: db) }
+        }
+        return performRead { findTermsLocked(texts: texts, on: reader) }
+    }
+
+    private func findTermsLocked(texts: [String], on connection: Connection?) -> [TermDB] {
         var result: [TermDB] = []
         
-        guard let db = db else { return result }
+        guard let db = connection else { return result }
 
         let query = self.terms.filter(
             texts.contains(self.term) ||
             texts.contains(self.reading)
         )
+        let dictionaries = installedDictionaries()
         do {
             for row in try db.prepare(query) {
-                guard let dictionary = AppManager.shared.dictionaries.first(where: { dic in
-                    dic.id == row[self.dictionaryId]
-                }) else {
+                guard let dictionary = dictionaries[row[self.dictionaryId]] else {
                     continue
                 }
                 let definitionTags = row[self.definitionTags].components(separatedBy: " ").map{
@@ -392,7 +458,7 @@ class SQLiteManager {
                 )
             }
         } catch {
-            print("error: \(error)")
+            Logger.database.error("Term lookup failed: \(error.localizedDescription, privacy: .public)")
         }
         
         return result

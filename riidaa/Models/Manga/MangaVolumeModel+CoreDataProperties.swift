@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import os
 import CoreData
 
 
@@ -20,6 +21,7 @@ extension MangaVolumeModel {
     @NSManaged public var pages: NSOrderedSet
     @NSManaged public var manga: MangaModel
     @NSManaged public var lastReadPage: Int64
+    @NSManaged public var last_read_at: NSDate?
 
 }
 
@@ -83,7 +85,7 @@ extension MangaVolumeModel {
             try fileManager.moveItem(at: volumeDir, to: newVolumeDir)
             self.number = newNumber
         } catch {
-            print("Failed to change volume number: \(error.localizedDescription)")
+            Logger.library.error("Failed to change volume number: \(error.localizedDescription, privacy: .public)")
         }
     }
     

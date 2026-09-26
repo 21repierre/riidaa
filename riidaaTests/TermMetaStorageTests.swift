@@ -13,6 +13,16 @@ import Testing
 @Suite(.serialized)
 struct TermMetaStorageTests {
 
+    init() async {
+        _ = AppManager.shared
+        var waited = 0
+        while AppManager.shared.isLoading && waited < 500 {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+            waited += 1
+        }
+        AppManager.shared.waitForPendingPurge()
+    }
+
     private func makeDictionary(_ title: String) -> DictionaryDB? {
         let dictionary = SQLiteManager.shared.insertDictionary(
             revision: "test", title: title, sequenced: false, format: 3,

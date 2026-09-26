@@ -7,6 +7,7 @@
 
 import CoreData
 import GameplayKit
+import os
 
 class CoreDataManager: ObservableObject {
     
@@ -20,6 +21,8 @@ class CoreDataManager: ObservableObject {
         }
     }
     let container = NSPersistentContainer(name: "CoreModel")
+
+    private(set) var loadError: Error?
     
     private init(inMemory: Bool = false) {
         if inMemory {
@@ -34,7 +37,7 @@ class CoreDataManager: ObservableObject {
         
         container.loadPersistentStores { _, error in
             if let error = error {
-                fatalError("リーダー Core Data failed to load: \(error)")
+                self.loadError = error
             }
         }
     }
@@ -90,7 +93,7 @@ class CoreDataManager: ObservableObject {
                 try context.save()
             }
         } catch {
-            print("Failed to save リーダー Core Data:", error)
+            Logger.database.error("Failed to save: \(error.localizedDescription, privacy: .public)")
         }
     }
     

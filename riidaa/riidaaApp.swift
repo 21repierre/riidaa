@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftData
 import Apollo
 
 @main
@@ -18,6 +17,9 @@ struct riidaaApp: App {
     
     var body: some Scene {
         WindowGroup {
+            if let error = CoreController.loadError {
+                StoreUnavailableView(error: error)
+            } else {
             HomeView()
                 .environment(\.managedObjectContext, CoreController.context)
                 .environmentObject(appManager)
@@ -41,7 +43,31 @@ struct riidaaApp: App {
                 }
                 .animation(.easeInOut(duration: 0.25), value: appManager.isLoading)
                 .animation(.easeInOut(duration: 0.25), value: appManager.purging)
+            }
         }
+    }
+}
+
+struct StoreUnavailableView: View {
+    let error: Error
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "externaldrive.badge.xmark")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+            Text("Library unavailable")
+                .font(.headline)
+            Text("リーダー could not open its library. Closing the app fully and reopening it will often be enough.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Text(error.localizedDescription)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(30)
     }
 }
 

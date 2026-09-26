@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import os
 import PhotosUI
 import CoreData
 
@@ -69,16 +70,22 @@ struct MangaListView: View {
     private func refreshLastRead() {
         guard sort == .lastRead else { return }
 
-        let request = NSFetchRequest<NSDictionary>(entityName: "MangaPageModel")
-        request.predicate = NSPredicate(format: "read_at != nil")
+        let request = NSFetchRequest<NSDictionary>(entityName: "MangaVolumeModel")
+        request.predicate = NSPredicate(format: "last_read_at != nil")
         request.resultType = .dictionaryResultType
-        request.propertiesToFetch = ["read_at", "volume.manga"]
+        request.propertiesToFetch = ["last_read_at", "manga"]
 
-        guard let rows = try? moc.fetch(request) else { return }
+        let rows: [NSDictionary]
+        do {
+            rows = try moc.fetch(request)
+        } catch {
+            Logger.library.error("Failed to load last-read dates: \(error.localizedDescription, privacy: .public)")
+            return
+        }
         var latest: [NSManagedObjectID: Date] = [:]
         for row in rows {
-            guard let date = row["read_at"] as? Date,
-                  let manga = row["volume.manga"] as? NSManagedObjectID else { continue }
+            guard let date = row["last_read_at"] as? Date,
+                  let manga = row["manga"] as? NSManagedObjectID else { continue }
             if let seen = latest[manga], seen >= date { continue }
             latest[manga] = date
         }
