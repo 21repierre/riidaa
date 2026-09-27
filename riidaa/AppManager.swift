@@ -81,7 +81,11 @@ class AppManager : ObservableObject {
 
     func report(error: String?) {
         DispatchQueue.main.async {
-            self.lastError = error
+            if let error = error, let existing = self.lastError, !existing.contains(error) {
+                self.lastError = existing + "\n\n" + error
+            } else {
+                self.lastError = error
+            }
             self.preparing = nil
         }
     }
