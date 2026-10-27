@@ -287,7 +287,10 @@ extension VolumeListView {
                             throw NSError(domain: "VolumeProcessing", code: 6, userInfo: [NSLocalizedDescriptionKey: "Missing image infos"])
                         }
                         let img = imagesFolder.appendingPathComponent(img_path)
-                        let destImg = pagesDirectory.appendingPathComponent(img_path)
+                        let destImg = try MokuroArchive.destination(for: img_path, in: pagesDirectory)
+                        try fileManager.createDirectory(
+                            at: destImg.deletingLastPathComponent(), withIntermediateDirectories: true
+                        )
                         try? fileManager.removeItem(at: destImg)
                         try fileManager.moveItem(at: img, to: destImg)
                     

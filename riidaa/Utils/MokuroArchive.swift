@@ -12,6 +12,7 @@ enum MokuroArchive {
         case noMokuroFile
         case unreadable(String)
         case imagesNotFound(volume: String, page: String)
+        case unsafePagePath(String)
         case someVolumes([String])
 
         var errorDescription: String? {
@@ -22,6 +23,8 @@ enum MokuroArchive {
                 return "\(name) could not be read as a mokuro file."
             case .imagesNotFound(let volume, let page):
                 return "Found \(volume) but not its page images - nothing in the zip contains \(page)."
+            case .unsafePagePath(let page):
+                return "This zip lists a page at \(page), which points outside its own volume folder. It was not imported."
             case .someVolumes(let reasons):
                 return reasons.joined(separator: "\n\n")
             }
@@ -52,6 +55,9 @@ enum MokuroArchive {
         let sibling = mokuroFile.deletingPathExtension()
         if holds(sibling) { return sibling }
 
+        let container = mokuroFile.deletingLastPathComponent()
+        if holds(container) { return container }
+
         guard let walker = fileManager.enumerator(at: root, includingPropertiesForKeys: [.isDirectoryKey]) else {
             return nil
         }
@@ -60,6 +66,15 @@ enum MokuroArchive {
             return url
         }
         return nil
+    }
+
+    static func destination(for page: String, in directory: URL) throws -> URL {
+        let root = directory.standardizedFileURL
+        let destination = directory.appendingPathComponent(page).standardizedFileURL
+        guard destination.path.hasPrefix(root.path + "/") else {
+            throw Failure.unsafePagePath(page)
+        }
+        return destination
     }
 
     static func volumeNumber(from volume: String, title: String) -> Int64? {
