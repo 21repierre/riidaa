@@ -27,6 +27,9 @@ struct MokuroArchiveTests {
         #expect(MokuroArchive.volumeNumber(from: "のんのんびより 第03巻", title: "のんのんびより") == 3)
         #expect(MokuroArchive.volumeNumber(from: "ONE PIECE 1 [aKraa]", title: "ONE PIECE") == 1)
         #expect(MokuroArchive.volumeNumber(from: "ONE PIECE 10 [aKraa]", title: "ONE PIECE") == 10)
+        #expect(MokuroArchive.volumeNumber(from: "ワンピース 第１巻", title: "ワンピース") == 1)
+        #expect(MokuroArchive.volumeNumber(from: "ワンピース　１２", title: "ワンピース") == 12)
+        #expect(MokuroArchive.volumeNumber(from: "Yotsuba Vol.03 Ch 12", title: "Yotsuba") == 3)
     }
 
     /// A year in brackets would otherwise win the "last number" race and import as volume 1988.
@@ -90,12 +93,12 @@ struct MokuroArchiveTests {
 struct BulkImportSummaryTests {
 
     @Test func saysNothingWhenEverythingImported() {
-        #expect(VolumeProcessingModel.summary(failures: [], of: 5) == nil)
+        #expect(VolumeImporter.summary(failures: [], of: 5) == nil)
     }
 
     @Test func namesTheFailuresAndHowManySurvived() throws {
         let summary = try #require(
-            VolumeProcessingModel.summary(failures: ["v03.zip: no .mokuro file"], of: 5)
+            VolumeImporter.summary(failures: ["v03.zip: no .mokuro file"], of: 5)
         )
         #expect(summary.contains("4 of 5 imported"))
         #expect(summary.contains("v03.zip"))
@@ -103,10 +106,20 @@ struct BulkImportSummaryTests {
 
     @Test func reportsOnlyTheReasonsWhenNothingImported() throws {
         let summary = try #require(
-            VolumeProcessingModel.summary(failures: ["a.zip: bad", "b.zip: worse"], of: 2)
+            VolumeImporter.summary(failures: ["a.zip: bad", "b.zip: worse"], of: 2)
         )
         #expect(!summary.contains("of 2 imported"))
         #expect(summary.contains("a.zip") && summary.contains("b.zip"))
     }
 
+
+    /// A malformed box fails its volume rather than overflowing into a crash; a box a little off
+    /// the page edge is fine.
+    @MainActor
+    @Test func readsBoxCoordinatesWithinAPlausibleRange() {
+        #expect(VolumeImporter.pixels(NSNumber(value: 12.6)) == 13)
+        #expect(VolumeImporter.pixels(NSNumber(value: -4)) == -4)
+        #expect(VolumeImporter.pixels(NSNumber(value: 2_147_483_000)) == nil)
+        #expect(VolumeImporter.pixels(NSNumber(value: Double.nan)) == nil)
+    }
 }

@@ -15,6 +15,9 @@ public struct Inflection : Sendable {
     public let inflectedTypes: [WordType]
     
     public static let inflectionRules: [InflectionRule: [Inflection]] = [
+        .suru: [
+            Inflection(base: "", inflection: "する", baseTypes: [.vs], inflectedTypes: [.vs]),
+        ],
         .masu: [
             Inflection(base: "る", inflection: "ます", baseTypes: [.v1d], inflectedTypes: [.masu_form]),
             
@@ -37,6 +40,7 @@ public struct Inflection : Sendable {
         ],
         .te: [
             Inflection(base: "い", inflection: "くて", baseTypes: [.adj_i], inflectedTypes: [.te_form]),
+            Inflection(base: "ない", inflection: "ないで", baseTypes: [.adj_i], inflectedTypes: [.te_form]),
             
             Inflection(base: "る", inflection: "て", baseTypes: [.v1], inflectedTypes: [.te_form]),
             
@@ -85,10 +89,10 @@ public struct Inflection : Sendable {
         ],
         .iru: [
             Inflection(base: "て", inflection: "ている", baseTypes: [.te_form], inflectedTypes: [.v1]),
-            Inflection(base: "て", inflection: "てる", baseTypes: [.te_form], inflectedTypes: [.v1p]),
+            Inflection(base: "て", inflection: "てる", baseTypes: [.te_form], inflectedTypes: [.v1]),
             
             Inflection(base: "で", inflection: "でいる", baseTypes: [.te_form], inflectedTypes: [.v1]),
-            Inflection(base: "で", inflection: "でる", baseTypes: [.te_form], inflectedTypes: [.v1p]),
+            Inflection(base: "で", inflection: "でる", baseTypes: [.te_form], inflectedTypes: [.v1]),
             
             Inflection(base: "て", inflection: "ておる", baseTypes: [.te_form], inflectedTypes: [.v5]),
             Inflection(base: "で", inflection: "でおる", baseTypes: [.te_form], inflectedTypes: [.v5]),
@@ -121,6 +125,7 @@ public struct Inflection : Sendable {
             Inflection(base: "めば", inflection: "みゃ", baseTypes: [.ba_form], inflectedTypes: [.ya_form]),
         ],
         .cha: [
+            Inflection(base: "い", inflection: "くちゃ", baseTypes: [.adj_i], inflectedTypes: [.v5]),
             Inflection(base: "る", inflection: "ちゃ", baseTypes: [.v1], inflectedTypes: [.v5]),
             Inflection(base: "ぐ", inflection: "いじゃ", baseTypes: [.v5], inflectedTypes: [.v5]),
             Inflection(base: "く", inflection: "いちゃ", baseTypes: [.v5], inflectedTypes: [.v5]),
@@ -294,9 +299,6 @@ public struct Inflection : Sendable {
             Inflection(base: "ます", inflection: "ました", baseTypes: [.masu_form], inflectedTypes: [.ta_form]),
             Inflection(base: "", inflection: "でした", baseTypes: [.masen_form], inflectedTypes: [.ta_form]),
             Inflection(base: "", inflection: "かった", baseTypes: [.masen_form, .n_form], inflectedTypes: [.ta_form]),
-            
-            
-            Inflection(base: "てる", inflection: "てた", baseTypes: [.v1p], inflectedTypes: [.ta_form]),
         ],
         .negative: [
             Inflection(base: "い", inflection: "くない", baseTypes: [.adj_i], inflectedTypes: [.adj_i]),
@@ -967,6 +969,9 @@ public struct Inflection : Sendable {
         
     ]
     
+    /// A fixed order, so the chain shown for a form reached two ways is the same every launch.
+    private static let orderedRules = inflectionRules.sorted { $0.key.rawValue < $1.key.rawValue }
+
     public func match(text: String) -> Bool {
         return text.hasSuffix(self.inflection)
     }
@@ -984,11 +989,12 @@ public struct Inflection : Sendable {
         var i = 0
         while i < deinflections.count {
             let current_deinflection = deinflections[i]
-            for (ruleName, inflections) in Inflection.inflectionRules {
+            for (ruleName, inflections) in Inflection.orderedRules {
                 for inflection in inflections {
                     if (current_deinflection.types.isEmpty || current_deinflection.types.inflectionMatch(wl: inflection.inflectedTypes)) && inflection.match(text: current_deinflection.text) {
 
                         let newText = String(current_deinflection.text.dropLast(inflection.inflection.count)) + inflection.base
+                        guard !newText.isEmpty else { continue }
                         let newTypes = inflection.baseTypes
                         let newKey = key(newText, newTypes)
                         guard seen.insert(newKey).inserted else { continue }

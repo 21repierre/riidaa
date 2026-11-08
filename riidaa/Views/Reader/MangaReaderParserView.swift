@@ -12,7 +12,7 @@ struct MangaReaderParserView: View {
     
     let line: String
     var source: MangaSource? = nil
-    var pageImage: (() -> UIImage?)? = nil
+    var pageImage: (() async -> UIImage?)? = nil
     @State var parsedText: [ParsingResult] = []
     @State var selectedElement: Int?
     @State var loading = false
@@ -70,7 +70,7 @@ struct MangaReaderParserView: View {
                         if let selectedElement = selectedElement {
                             ScrollView(showsIndicators: false) {
                                 LazyVStack(alignment: .leading) {
-                                    ForEach(parsedText[selectedElement].results, id: \.self) { result in
+                                    ForEach(parsedText[selectedElement].results, id: \.term.rowIdentity) { result in
                                         ResultView(result: result, fullSentence: line, source: source, match: sentenceMatch(at: selectedElement), pageImage: pageImage, definition: $inflectionDescription)
                                     }
                                 }
@@ -88,22 +88,36 @@ struct MangaReaderParserView: View {
                     }
                 }
                 .padding([.leading, .trailing])
-                .onChange(of: line) { newLine in
-                    if newLine == "" {
-                        self.selectedElement = nil
-                        parsedText = []
-                    } else {
-                        parseLine(line: newLine)
-                    }
-                }
                 .transition(.move(edge: .leading))
             }
         }
         .animation(.easeInOut(duration: 0.25), value: inflectionDescription)
-        .onAppear {
-            if line != "" {
-                parseLine(line: line)
+        .task(id: line) {
+            inflectionDescription = nil
+            guard !line.isEmpty else {
+                selectedElement = nil
+                parsedText = []
+                loading = false
+                return
             }
+            loading = true
+            let parse = Task.detached(priority: .userInitiated) { [line] in
+                MangaReaderParserView.tokens(of: line)
+            }
+            let tokens = await withTaskCancellationHandler {
+                await parse.value
+            } onCancel: {
+                parse.cancel()
+            }
+            guard !Task.isCancelled else { return }
+            if settings.wordAudioEnabled && settings.preloadWordAudio {
+                for result in tokens.flatMap({ $0.results.prefix(2) }) {
+                    WordAudio.prefetch(term: result.term.term, reading: result.term.reading)
+                }
+            }
+            parsedText = tokens
+            selectedElement = tokens.firstIndex { !$0.results.isEmpty } ?? (tokens.isEmpty ? nil : 0)
+            loading = false
         }
     }
 }
@@ -117,52 +131,35 @@ extension MangaReaderParserView {
         return SentenceMatch(surface: parsedText[index].original, offset: offset)
     }
 
-    func parseLine(line: String) {
-        DispatchQueue.global(qos: .userInteractive).async {
-            self.loading = true
-            
-            var results: [ParsingResult] = []
-            
-            let punctuations = #"[。．、，゠＝？！（）「」｛｝［］【】…‥〽〝〟　〜：♪＜＞～]+"#
-            let regex = try! NSRegularExpression(pattern: punctuations, options: [])
-            
-            var lastIndex = 0
-            let nsLine = line as NSString
-            
-            for match in regex.matches(in: line, options: [], range: NSRange(location: 0, length: nsLine.length)) {
-                let range = match.range
-                if range.location > lastIndex {
-                    let chunk = nsLine.substring(with: NSRange(location: lastIndex, length: range.location - lastIndex))
-                    let result = Parser.parse(text: chunk)
-                    if !result.isEmpty {
-                        results.append(contentsOf: result)
-                    } else {
-                        results.append(ParsingResult(original: chunk, results: []))
-                    }
-                }
-                let punctuation = nsLine.substring(with: range)
-                results.append(ParsingResult(original: punctuation, results: []))
-                lastIndex = range.location + range.length
-            }
-            
-            if lastIndex < nsLine.length {
-                let chunk = nsLine.substring(from: lastIndex)
-                let result = Parser.parse(text: chunk)
-                if !result.isEmpty {
-                    results.append(contentsOf: result)
-                } else {
-                    results.append(ParsingResult(original: chunk, results: []))
-                }
-            }
-            
-            if results.count > 0 {
-                self.parsedText = results
-                self.selectedElement = 0
-            }
-            self.loading = false
+    private static let separators = try! NSRegularExpression(
+        pattern: #"[。．、，゠＝？！?!（）()「」『』〈〉《》｛｝［］【】…‥・〽〝〟：:♪＜＞―─♡☆★\s　]+"#
+    )
+
+    nonisolated static func tokens(of line: String) -> [ParsingResult] {
+        var results: [ParsingResult] = []
+        let nsLine = line as NSString
+        var lastIndex = 0
+
+        func parseChunk(_ chunk: String) {
+            guard !Task.isCancelled else { return }
+            let parsed = Parser.parse(text: chunk)
+            results.append(contentsOf: parsed.isEmpty ? [ParsingResult(original: chunk, results: [])] : parsed)
         }
+
+        for match in separators.matches(in: line, range: NSRange(location: 0, length: nsLine.length)) {
+            let range = match.range
+            if range.location > lastIndex {
+                parseChunk(nsLine.substring(with: NSRange(location: lastIndex, length: range.location - lastIndex)))
+            }
+            results.append(ParsingResult(original: nsLine.substring(with: range), results: []))
+            lastIndex = range.location + range.length
+        }
+        if lastIndex < nsLine.length {
+            parseChunk(nsLine.substring(from: lastIndex))
+        }
+        return results
     }
-    
+
 }
 
 #Preview {
@@ -224,15 +221,19 @@ struct ResultView: View {
     var fullSentence: String
     var source: MangaSource? = nil
     var match: SentenceMatch? = nil
-    var pageImage: (() -> UIImage?)? = nil
+    var pageImage: (() async -> UIImage?)? = nil
 
     @Binding var definition: InflectionDescription?
     @EnvironmentObject var settings: SettingsModel
 
     @State private var exported = false
+    @State private var exporting = false
+    @State private var nothingToExport = false
     @State private var meta: [TermMetaDB] = []
-    @State private var audioPlayer: AVPlayer? = nil
+    @State private var audioPlayer: AVAudioPlayer? = nil
     @State private var audioAvailable = false
+    @State private var audioLoading = false
+    @State private var playWhenReady = false
 
     /// Nil unless a real recording exists
     private var audioURL: URL? {
@@ -241,7 +242,7 @@ struct ResultView: View {
     }
 
     private var summary: TermMetaSummary {
-        TermMetaSummary(meta: meta, reading: result.term.reading)
+        TermMetaSummary(meta: meta, term: result.term.term, reading: result.term.effectiveReading)
     }
     
     var body: some View {
@@ -254,12 +255,20 @@ struct ResultView: View {
                         .foregroundStyle(.green)
                         .accessibilityLabel("Already exported to Anki")
                 }
-                if let audioURL = audioURL {
+                if settings.wordAudioEnabled && (audioAvailable || audioLoading) {
                     Button {
-                        play(audioURL)
+                        if audioPlayer != nil {
+                            play()
+                        } else {
+                            playWhenReady = true
+                        }
                     } label: {
-                        Image(systemName: "speaker.wave.2.fill")
-                            .font(.title3)
+                        if playWhenReady && audioPlayer == nil {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "speaker.wave.2.fill")
+                                .font(.title3)
+                        }
                     }
                     .accessibilityLabel("Play pronunciation")
                 }
@@ -268,6 +277,12 @@ struct ResultView: View {
                 if settings.ankiExport != nil {
                     Button("Export") {
                         Task { await export() }
+                    }
+                    .disabled(exporting)
+                    .alert("Nothing to send", isPresented: $nothingToExport) {
+                        Button("OK", role: .cancel) {}
+                    } message: {
+                        Text("None of the note type's fields are matched to anything from this word. Set them up in Settings › Anki.")
                     }
                     .padding(.vertical, 7)
                     .padding(.horizontal, 10)
@@ -344,10 +359,24 @@ struct ResultView: View {
         }
         .onAppear {
             let term = result.term
+            term.loadDefinitions()
             exported = result.term.exportedToAnki
             if settings.wordAudioEnabled, let candidate = WordAudio.url(term: term.term, reading: term.reading) {
-                WordAudio.checkAvailability(of: candidate) { available in
-                    self.audioAvailable = available
+                audioLoading = !WordAudio.isKnownMissing(candidate)
+                WordAudio.recording(at: candidate) { recording in
+                    audioLoading = false
+                    guard let recording = recording, let player = try? AVAudioPlayer(data: recording) else {
+                        playWhenReady = false
+                        return
+                    }
+                    WordAudio.prepareSession()
+                    player.prepareToPlay()
+                    audioPlayer = player
+                    audioAvailable = true
+                    if playWhenReady {
+                        playWhenReady = false
+                        play()
+                    }
                 }
             }
             DispatchQueue.global(qos: .userInitiated).async {
@@ -358,39 +387,22 @@ struct ResultView: View {
             }
         }
         .onOpenURL { url in
-            if url.scheme == AnkiExport.callbackScheme, url.host() == "anki-callback" {
-                PageImageServer.shared.stop()
-            }
-            guard url.scheme == AnkiExport.callbackScheme,
-                  url.host() == "anki-callback",
-                  let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                  let term = components.queryItems?.first(where: { $0.name == "term" })?.value,
-                  let reading = components.queryItems?.first(where: { $0.name == "reading" })?.value
-            else {
-                return
-            }
-            if term == result.term.term, reading == result.term.reading {
-                result.term.exportedToAnki = true
-                exported = true
-                SQLiteManager.shared.markExported(
-                    term: result.term.term, reading: result.term.reading
-                )
-            }
-
+            guard let word = AnkiExport.exportedWord(in: url),
+                  word.term == result.term.term, word.reading == result.term.reading else { return }
+            result.term.exportedToAnki = true
+            exported = true
         }
     }
 
     /// Async because the loopback listener must be up and its port known before the URL can
     /// name it.
-    private func escaped(_ text: String) -> String {
-        text.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? text
-    }
-
     private func export() async {
-        guard let export = settings.ankiExport else { return }
+        guard let export = settings.ankiExport, !exporting else { return }
+        exporting = true
+        defer { exporting = false }
 
         var pictureURL: URL? = nil
-        if export.fields[.picture] != nil, let image = pageImage?() {
+        if export.fields[.picture] != nil, let image = await pageImage?() {
             pictureURL = await PageImageServer.shared.publish(image)
         }
 
@@ -405,23 +417,26 @@ struct ResultView: View {
         )
         guard let url = export.addNoteURL(
             context: context,
-            callback: AnkiExport.callbackURL(
-                "term=\(escaped(result.term.term))&reading=\(escaped(result.term.reading))"
-            )
+            callback: AnkiExport.callbackURL([
+                URLQueryItem(name: "term", value: result.term.term),
+                URLQueryItem(name: "reading", value: result.term.reading),
+            ])
         ) else {
             PageImageServer.shared.stop()
+            nothingToExport = true
             return
         }
         await UIApplication.shared.open(url, options: [:])
     }
 
-    /// Playback category so a deliberate tap is audible with the ringer switched off.
-    private func play(_ url: URL) {
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-        try? AVAudioSession.sharedInstance().setActive(true)
-        let player = AVPlayer(url: url)
-        audioPlayer = player
-        player.play()
+    private func play() {
+        guard let player = audioPlayer else { return }
+        WordAudio.prepareSession()
+        player.currentTime = 0
+        if !player.play() {
+            WordAudio.prepareSession(force: true)
+            player.play()
+        }
     }
 }
 
@@ -444,6 +459,9 @@ struct TermDefinitionsView: View {
                 }
             }
             .padding(.bottom, 10)
+        }
+        .onAppear {
+            term.loadDefinitions()
         }
     }
 }

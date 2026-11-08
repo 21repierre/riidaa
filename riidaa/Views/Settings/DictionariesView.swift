@@ -52,6 +52,24 @@ struct DictionariesView: View {
                 .padding(.top, 8)
             }
 
+            if appManager.dictionaries.isEmpty && appManager.working.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "character.book.closed")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+                    Text("No dictionaries yet")
+                        .font(.headline)
+                    Text("Lookups need at least one Yomitan dictionary. Download one as a zip, then tap + to add it. Jitendex is a good first choice for Japanese to English.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Link("Get Jitendex", destination: URL(string: "https://jitendex.org")!)
+                        .font(.subheadline)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 30)
+                .padding(.top, 60)
+            }
             ForEach(appManager.dictionaries) { dictionary in
                 DictionaryView(dictionary: dictionary, onUpdate: updateDictionary)
             }
@@ -63,6 +81,7 @@ struct DictionariesView: View {
             }) {
                 Image(systemName: "plus")
             }
+            .accessibilityLabel("Add dictionaries")
         }
         .fileImporter(
             isPresented: $isPickingDictionary,
@@ -76,15 +95,6 @@ struct DictionariesView: View {
                 Logger.dictionary.error("Could not open the picked dictionary: \(error.localizedDescription, privacy: .public)")
             }
         }
-        .alert(
-            "Dictionary error",
-            isPresented: Binding(
-                get: { appManager.lastError != nil },
-                set: { shown in if !shown { appManager.lastError = nil } }
-            ),
-            actions: { Button("OK", role: .cancel) {} },
-            message: { Text(appManager.lastError ?? "") }
-        )
     }
 
     private var importer: DictionaryImporter { DictionaryImporter(appManager: appManager) }
@@ -101,7 +111,11 @@ struct DictionariesView: View {
 
         Task {
             do {
-                let (temporary, _) = try await URLSession.shared.download(from: url)
+                let (temporary, response) = try await URLSession.shared.download(from: url)
+                if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                    try? FileManager.default.removeItem(at: temporary)
+                    throw URLError(.badServerResponse)
+                }
                 // The importer keys off the extension, and a download has none.
                 let archive = temporary.deletingPathExtension().appendingPathExtension("zip")
                 try? FileManager.default.removeItem(at: archive)

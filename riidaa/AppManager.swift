@@ -91,6 +91,7 @@ class AppManager : ObservableObject {
     }
     
     private init() {
+        SQLiteManager.shared.discardIncompleteDictionaries()
         loadDictionaries()
         discardExtractedDictionaries()
         purgeOrphanedEntries()

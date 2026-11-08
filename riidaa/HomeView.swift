@@ -13,7 +13,7 @@ struct HomeView: View {
         TabView {
             MangaListView()
                 .tabItem {
-                    Label("List", systemImage: "book")
+                    Label("Library", systemImage: "book")
                 }
             SettingsView()
                 .tabItem {

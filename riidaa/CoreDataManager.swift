@@ -23,22 +23,33 @@ class CoreDataManager: ObservableObject {
     let container = NSPersistentContainer(name: "CoreModel")
 
     private(set) var loadError: Error?
+    @Published var saveError: String?
     
     private init(inMemory: Bool = false) {
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }
         container.viewContext.automaticallyMergesChangesFromParent = true
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         if let description = container.persistentStoreDescriptions.first {
             description.shouldMigrateStoreAutomatically = true
-//            description.shouldInferMappingModelAutomatically = false
+            if !inMemory, let url = description.url {
+                do {
+                    try CoreDataManager.migrateFromV1IfNeeded(storeURL: url)
+                } catch {
+                    loadError = error
+                    return
+                }
+            }
         }
 
-        
         container.loadPersistentStores { _, error in
             if let error = error {
                 self.loadError = error
             }
+        }
+        if !inMemory && loadError == nil {
+            MangaStorage.removeOrphans(in: newBackgroundContext())
         }
     }
     
@@ -94,11 +105,60 @@ class CoreDataManager: ObservableObject {
             }
         } catch {
             Logger.database.error("Failed to save: \(error.localizedDescription, privacy: .public)")
+            context.rollback()
+            saveError = error.localizedDescription
         }
     }
     
     func newBackgroundContext() -> NSManagedObjectContext {
         let context = self.container.newBackgroundContext()
+        // A rename or cover change during an import must not fail every remaining volume.
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         return context
+    }
+
+    func delete(_ object: NSManagedObject, removing directories: [URL]) {
+        let id = object.objectID
+        let context = newBackgroundContext()
+        context.perform {
+            context.delete(context.object(with: id))
+            do {
+                try context.save()
+                MangaStorage.removeFiles(at: directories)
+            } catch {
+                Logger.database.error("Failed to delete: \(error.localizedDescription, privacy: .public)")
+                DispatchQueue.main.async {
+                    self.saveError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    static func migrateFromV1IfNeeded(storeURL: URL, bundle: Bundle = .main) throws {
+        guard FileManager.default.fileExists(atPath: storeURL.path),
+              let metadata = try? NSPersistentStoreCoordinator.metadataForPersistentStore(
+                ofType: NSSQLiteStoreType, at: storeURL
+              ),
+              let models = bundle.url(forResource: "CoreModel", withExtension: "momd"),
+              let v1 = NSManagedObjectModel(contentsOf: models.appendingPathComponent("CoreModel.mom")),
+              let v2 = NSManagedObjectModel(contentsOf: models.appendingPathComponent("CoreModelV2.mom")),
+              v1.isConfiguration(withName: nil, compatibleWithStoreMetadata: metadata),
+              let mapping = NSMappingModel(from: [bundle], forSourceModel: v1, destinationModel: v2)
+        else {
+            return
+        }
+
+        let migrated = storeURL.deletingLastPathComponent().appendingPathComponent("CoreModel-v1-migration.sqlite")
+        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: v2)
+        try? coordinator.destroyPersistentStore(at: migrated, ofType: NSSQLiteStoreType)
+        try NSMigrationManager(sourceModel: v1, destinationModel: v2).migrateStore(
+            from: storeURL, sourceType: NSSQLiteStoreType, options: nil, with: mapping,
+            toDestinationURL: migrated, destinationType: NSSQLiteStoreType, destinationOptions: nil
+        )
+        try coordinator.replacePersistentStore(
+            at: storeURL, destinationOptions: nil, withPersistentStoreFrom: migrated,
+            sourceOptions: nil, ofType: NSSQLiteStoreType
+        )
+        try? coordinator.destroyPersistentStore(at: migrated, ofType: NSSQLiteStoreType)
     }
 }

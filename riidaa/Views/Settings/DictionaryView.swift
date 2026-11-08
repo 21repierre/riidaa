@@ -62,12 +62,18 @@ struct DictionaryView: View {
                         }
                         .buttonStyle(BorderlessButtonStyle())
                         .foregroundColor(.blue)
-                    case UpdateState.unknown :
+                    case UpdateState.unknown:
                         ProgressView()
                             .padding()
                     case UpdateState.upToDate:
                         Text("Up to date")
                             .foregroundColor(.blue)
+                    case UpdateState.checkFailed:
+                        Text("Couldn't check for updates")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    case UpdateState.notUpdatable:
+                        EmptyView()
                     }
                 }
             }
@@ -91,9 +97,6 @@ struct DictionaryView: View {
 
 }
 
-//#Preview {
-//    DictionaryView()
-//}
 #Preview {
     DictionariesView()
         .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
