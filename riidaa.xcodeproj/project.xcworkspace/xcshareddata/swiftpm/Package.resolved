@@ -1,5 +1,5 @@
 {
-  "originHash" : "7ffcd850d9ca0afd58084c3901b698444ca9ececc631b2ba5e9e4f38a8f273b7",
+  "originHash" : "3cf0aac7468959d2ffec17316878c98e1cefc7862cc950a4bb8031378b96e1fc",
   "pins" : [
     {
       "identity" : "apollo-ios",
@@ -8,15 +8,6 @@
       "state" : {
         "revision" : "e98e9d3b398b6005149074d51b097e31aaa44f63",
         "version" : "1.17.0"
-      }
-    },
-    {
-      "identity" : "lazypager",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gh123man/LazyPager",
-      "state" : {
-        "revision" : "3601245191ffb0aa237ca408d7b4dd03b4d9d7eb",
-        "version" : "1.1.7"
       }
     },
     {

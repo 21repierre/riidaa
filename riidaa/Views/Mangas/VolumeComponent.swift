@@ -13,7 +13,7 @@ struct VolumeComponent: View {
     
     var body: some View {
         let totalPages = volume.pages.count
-        let currentPage = volume.lastReadPage + 1
+        let currentPage = volume.last_read_at == nil ? 0 : volume.lastReadPage + 1
         let progress = totalPages > 0 ? Double(currentPage) / Double(totalPages) : 0
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
@@ -50,7 +50,4 @@ struct VolumeComponent: View {
         manga: CoreDataManager.sampleManga
     )
     .environment(\.managedObjectContext, CoreDataManager.shared.container.viewContext)
-    .onAppear(perform: {
-        print(CoreDataManager.sampleManga)
-    })
 }

@@ -21,27 +21,33 @@ public struct PitchAccent: Hashable {
         morae(of: reading).count
     }
 
-    /// Katakana, as pitch is conventionally written; small kana join the preceding mora.
-    static func morae(of reading: String) -> [String] {
+    static func morae(of reading: String, katakana: Bool = true) -> [String] {
         let combining: Set<Character> = [
             "ャ", "ュ", "ョ", "ァ", "ィ", "ゥ", "ェ", "ォ", "ヮ",
         ]
         var morae: [String] = []
         for character in reading {
-            var kana = character
+            var shifted = character
             if let scalar = character.unicodeScalars.first,
                character.unicodeScalars.count == 1,
                (0x3041...0x3096).contains(scalar.value),
-               let shifted = UnicodeScalar(scalar.value + 0x60) {
-                kana = Character(shifted)
+               let katakanaScalar = UnicodeScalar(scalar.value + 0x60) {
+                shifted = Character(katakanaScalar)
             }
-            if combining.contains(kana), !morae.isEmpty {
+            let kana = katakana ? shifted : character
+            if combining.contains(shifted), !morae.isEmpty {
                 morae[morae.count - 1].append(kana)
             } else {
                 morae.append(String(kana))
             }
         }
         return morae
+    }
+
+    private func isHigh(_ mora: Int) -> Bool {
+        if position == 0 { return mora > 1 }
+        if position == 1 { return mora == 1 }
+        return mora >= 2 && mora <= position
     }
 
     /// The pattern drawn as Yomitan and the Kaishi deck draw it
@@ -53,12 +59,6 @@ public struct PitchAccent: Hashable {
 
         let morae = PitchAccent.morae(of: reading)
         guard !morae.isEmpty else { return "" }
-
-        func isHigh(_ mora: Int) -> Bool {
-            if position == 0 { return mora > 1 }
-            if position == 1 { return mora == 1 }
-            return mora >= 2 && mora <= position
-        }
 
         var html = ""
         var index = 0
@@ -81,6 +81,37 @@ public struct PitchAccent: Hashable {
             index = end
         }
         return html
+    }
+
+    public func dotGraph(reading: String) -> String {
+        let morae = PitchAccent.morae(of: reading, katakana: false)
+        guard !morae.isEmpty else { return "" }
+
+        let step = 42
+        let viewWidth = step * morae.count + 32
+        let viewHeight = 84
+        func x(_ index: Int) -> Int { 16 + step * index }
+        func y(_ index: Int) -> Int { isHigh(index + 1) ? 5 : 30 }
+
+        let stroke = "fill:none;stroke:currentColor;stroke-width:1.5;"
+        var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"pitch\" "
+            + "width=\"\(String(format: "%.2f", Double(viewWidth) * 0.75))px\" "
+            + "height=\"\(String(format: "%.2f", Double(viewHeight) * 0.75))px\" "
+            + "viewBox=\"0 0 \(viewWidth) \(viewHeight)\">"
+        for (index, mora) in morae.enumerated() {
+            svg += "<text x=\"\(x(index))\" y=\"76\" text-anchor=\"middle\" "
+                + "style=\"font-size:26px;font-family:sans-serif;fill:currentColor;\">\(mora)</text>"
+        }
+        for index in morae.indices {
+            svg += "<path d=\"m \(x(index)),\(y(index)) \(step),\(y(index + 1) - y(index))\" style=\"\(stroke)\" />"
+        }
+        for index in morae.indices {
+            svg += "<circle r=\"5\" cx=\"\(x(index))\" cy=\"\(y(index))\" style=\"opacity:1;fill:currentColor;\" />"
+        }
+        let particle = morae.count
+        svg += "<circle r=\"4\" cx=\"\(x(particle))\" cy=\"\(y(particle))\" "
+            + "style=\"opacity:1;fill:none;stroke:currentColor;stroke-width:1.75;\" />"
+        return svg + "</svg>"
     }
 }
 
@@ -174,9 +205,9 @@ public struct TermMetaSummary {
     let frequencies: [(dictionary: String, frequency: TermFrequency)]
     let reading: String
 
-    init(meta: [TermMetaDB], reading: String) {
+    init(meta: [TermMetaDB], term: String, reading: String) {
         self.reading = reading
-        let applicable = meta.filter { $0.applies(toReading: reading) }
+        let applicable = meta.filter { $0.term == term && $0.applies(toReading: reading) }
         self.pitches = applicable.flatMap { entry -> [PitchAccent] in
             if case .pitch(let accents) = entry.content { return accents }
             return []
@@ -195,8 +226,16 @@ public struct TermMetaSummary {
         deduplicated(pitches.map { "[\($0.position)]" })
     }
 
+    public var pitchNumbers: [String] {
+        deduplicated(pitches.map { String($0.position) })
+    }
+
     public var pitchGraphs: [String] {
         deduplicated(pitches.map { $0.graph(reading: reading) })
+    }
+
+    public var pitchDotGraphs: [String] {
+        deduplicated(pitches.map { $0.dotGraph(reading: reading) })
     }
 
     public var pitchCategories: [String] {
@@ -204,10 +243,19 @@ public struct TermMetaSummary {
         return deduplicated(pitches.map { $0.category(moraCount: mora) })
     }
 
-    /// Deduplicated: metadata is looked up under both the term and its reading, and a rating
-    /// filed under both comes back twice.
     public var frequencyLabels: [String] {
-        deduplicated(frequencies.map { "\($0.dictionary): \($0.frequency.display)" })
+        let dictionaries = deduplicated(frequencies.map(\.dictionary))
+        return dictionaries.map { dictionary in
+            let ratings = frequencies.filter { $0.dictionary == dictionary }.map(\.frequency)
+            let ordered = ratings.sorted { left, right in
+                let leftKana = left.display.contains("㋕"), rightKana = right.display.contains("㋕")
+                if leftKana != rightKana { return !leftKana }
+                return (left.value ?? .max) < (right.value ?? .max)
+            }
+            let displays = deduplicated(ordered.map(\.display))
+            let rest = displays.dropFirst()
+            return "\(dictionary): \(displays[0])" + (rest.isEmpty ? "" : " (\(rest.joined(separator: ", ")))")
+        }
     }
 
     /// Lower means more common.

@@ -12,7 +12,7 @@ import UIKit
 ///
 /// AnkiMobile only takes media as a URL it downloads itself. Word audio already lives on the
 /// web; a manga page exists only on this device, so it is published briefly at
-/// `http://127.0.0.1:<port>/<token>.jpg`. Nothing leaves the phone. A background task is held
+/// `http://127.0.0.1:<port>/<token>.jpg`, listening on loopback only. A background task is held
 /// while the listener runs, since opening AnkiMobile suspends riidaa.
 final class PageImageServer {
 
@@ -41,7 +41,7 @@ final class PageImageServer {
         }
     }
 
-    /// Returns the URL for the Anki field, or nil if the listener could not start.
+    @MainActor
     func publish(_ image: UIImage, quality: CGFloat = 0.8, duration: TimeInterval = 60) async -> URL? {
         guard let data = image.jpegData(compressionQuality: quality) else { return nil }
 
@@ -50,7 +50,9 @@ final class PageImageServer {
         let token = UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(16)
         let path = "/\(token).jpg"
 
-        guard let listener = try? NWListener(using: .tcp, on: .any) else { return nil }
+        let parameters = NWParameters.tcp
+        parameters.requiredInterfaceType = .loopback
+        guard let listener = try? NWListener(using: parameters, on: .any) else { return nil }
         queue.sync {
             self.payload = data
             self.path = path
@@ -85,6 +87,7 @@ final class PageImageServer {
             listener.start(queue: queue)
         }
 
+        guard self.listener === listener else { return nil }
         guard let port = port else {
             stop()
             return nil
@@ -149,6 +152,7 @@ final class PageImageServer {
             guard let self = self else { return }
             self.endBackgroundTaskOnMain()
             self.backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "riidaa.pageimage") { [weak self] in
+                self?.endBackgroundTaskOnMain()
                 self?.stop()
             }
         }

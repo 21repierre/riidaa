@@ -21,6 +21,30 @@ public struct Furigana {
             ?? trimmed(term: termChars, reading: readingChars)
     }
 
+    public static func annotate(surface: String, term: String, reading: String) -> String? {
+        if surface == term {
+            return annotate(term: term, reading: reading)
+        }
+        let surfaceChars = Array(surface)
+        let termChars = Array(term)
+        var shared = 0
+        while shared < surfaceChars.count, shared < termChars.count, surfaceChars[shared] == termChars[shared] {
+            shared += 1
+        }
+        let termEnding = String(termChars[shared...])
+        // 来る's stem reads き or こ once conjugated, never the く of its dictionary form, and
+        // compounds like 帰って来る inherit that.
+        let endsInKuru = term.hasSuffix("来る") || term.hasSuffix("來る")
+        guard shared > 0, !endsInKuru, termEnding.allSatisfy(isKana), reading.hasSuffix(termEnding) else {
+            return nil
+        }
+        let stem = String(surfaceChars[..<shared])
+        guard let annotatedStem = annotate(term: stem, reading: String(reading.dropLast(termEnding.count))) else {
+            return nil
+        }
+        return annotatedStem + String(surfaceChars[shared...])
+    }
+
     /// Gives each kanji run the slice of the reading ending where the next kana run starts
     private static func distributed(term: [Character], reading: [Character]) -> String? {
         let runs = runs(of: term)
@@ -105,8 +129,7 @@ public struct Furigana {
     }
 
     private static func isKana(_ character: Character) -> Bool {
-        guard let scalar = character.unicodeScalars.first else { return false }
-        return (0x3041...0x309F).contains(scalar.value) || (0x30A1...0x30FF).contains(scalar.value)
+        String(character).isKana
     }
 
     private static func firstIndex(of needle: [Character], in haystack: [Character], from: Int) -> Int? {
