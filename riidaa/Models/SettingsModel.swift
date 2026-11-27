@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import os
 
 class SettingsModel: ObservableObject {
     
@@ -25,9 +26,12 @@ class SettingsModel: ObservableObject {
     
     @AppStorage("padding") var padding = 0.0
     @AppStorage("isLTR") var isLTR = false
+    @AppStorage("coverAlone") var coverAlone = true
+    @AppStorage("ankiCropPicture") var ankiCropPicture = false
 
     /// Word audio comes from a third-party service (see `WordAudio`), so it can be turned off.
     @AppStorage("wordAudioEnabled") var wordAudioEnabled = true
+    @AppStorage("preloadWordAudio") var preloadWordAudio = false
     
     @Published var ankiInfo: AnkiInfo? {
         didSet { save(ankiInfo, forKey: "ankiInfo") }
@@ -41,11 +45,23 @@ class SettingsModel: ObservableObject {
     @Published var ankiNoteType: AnkiInfo.NoteType? {
         didSet {
             save(ankiNoteType, forKey: "ankiNoteType")
-            discardMappingsMissingFromNoteType()
+            if let noteType = ankiNoteType, ankiFieldsByNoteType[noteType.name] == nil {
+                adoptAnkiFields(for: noteType)
+            }
         }
     }
-    @Published var ankiFields: [String: String] = [:] {
-        didSet { save(ankiFields, forKey: "ankiFields") }
+    @Published var ankiFieldsByNoteType: [String: [String: String]] = [:] {
+        didSet { save(ankiFieldsByNoteType, forKey: "ankiFieldsByNoteType") }
+    }
+    @Published var ankiSetupError: String?
+    private var legacyAnkiFields: [String: String]?
+
+    var ankiFields: [String: String] {
+        get { ankiNoteType.flatMap { ankiFieldsByNoteType[$0.name] } ?? [:] }
+        set {
+            guard let name = ankiNoteType?.name else { return }
+            ankiFieldsByNoteType[name] = newValue
+        }
     }
 
 #if APPSTORE
@@ -88,15 +104,69 @@ class SettingsModel: ObservableObject {
         )
     }
     
-    init() {
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         self.ankiInfo = load(forKey: "ankiInfo")
         self.ankiProfile = load(forKey: "ankiProfile")
         self.ankiDeck = load(forKey: "ankiDeck")
         self.ankiNoteType = load(forKey: "ankiNoteType")
-        self.ankiFields = load(forKey: "ankiFields") ?? SettingsModel.migratedAnkiFields()
+        self.ankiFieldsByNoteType = load(forKey: "ankiFieldsByNoteType") ?? [:]
+        if ankiFieldsByNoteType.isEmpty {
+            let legacy: [String: String] = load(forKey: "ankiFields") ?? SettingsModel.migratedAnkiFields(from: defaults)
+            if !legacy.isEmpty, let name = ankiNoteType?.name {
+                ankiFieldsByNoteType[name] = legacy
+                // didSet doesn't run during init.
+                save(ankiFieldsByNoteType, forKey: "ankiFieldsByNoteType")
+            } else if !legacy.isEmpty {
+                legacyAnkiFields = legacy
+            }
+        }
     }
 
-    private static func migratedAnkiFields() -> [String: String] {
+    private func adoptAnkiFields(for noteType: AnkiInfo.NoteType) {
+        let available = Set(noteType.fields.map(\.name))
+        if let legacy = legacyAnkiFields?.filter({ available.contains($0.value) }), !legacy.isEmpty {
+            legacyAnkiFields = nil
+            ankiFieldsByNoteType[noteType.name] = legacy
+        } else {
+            autoMapAnkiFields(for: noteType)
+        }
+    }
+
+    func apply(_ info: AnkiInfo) {
+        ankiInfo = info
+        ankiProfile = info.profiles.first { $0.name == ankiProfile?.name } ?? info.profiles.first
+        ankiDeck = info.decks.first { $0.name == ankiDeck?.name } ?? info.decks.first
+        ankiNoteType = info.notetypes.first { $0.name == ankiNoteType?.name } ?? info.notetypes.first
+        var pruned = ankiFieldsByNoteType
+        for noteType in info.notetypes {
+            let available = Set(noteType.fields.map(\.name))
+            pruned[noteType.name] = pruned[noteType.name]?.filter { available.contains($0.value) }
+        }
+        if pruned != ankiFieldsByNoteType {
+            ankiFieldsByNoteType = pruned
+        }
+    }
+
+    func handleAnkiSetupCallback(_ url: URL) {
+        guard url.scheme == AnkiExport.callbackScheme, url.host() == "anki-setup" else { return }
+        let pasteboardType = "net.ankimobile.json"
+        guard let data = UIPasteboard.general.data(forPasteboardType: pasteboardType) else {
+            ankiSetupError = "AnkiMobile didn't send its decks and note types. Try again from AnkiMobile's latest version."
+            return
+        }
+        UIPasteboard.general.setData(Data(), forPasteboardType: pasteboardType)
+        do {
+            apply(try JSONDecoder().decode(AnkiInfo.self, from: data))
+        } catch {
+            Logger.anki.error("Failed to decode Anki info: \(error.localizedDescription, privacy: .public)")
+            ankiSetupError = "AnkiMobile's reply couldn't be read."
+        }
+    }
+
+    private static func migratedAnkiFields(from defaults: UserDefaults) -> [String: String] {
         let legacyKeys: [(AnkiFieldToken, String)] = [
             (.word, "ankiFieldWord"),
             (.reading, "ankiFieldReading"),
@@ -105,22 +175,13 @@ class SettingsModel: ObservableObject {
         ]
         var fields: [String: String] = [:]
         for (token, key) in legacyKeys {
-            guard let data = UserDefaults.standard.data(forKey: key),
+            guard let data = defaults.data(forKey: key),
                   let field = try? JSONDecoder().decode(String.self, from: data) else {
                 continue
             }
             fields[token.rawValue] = field
         }
         return fields
-    }
-
-    private func discardMappingsMissingFromNoteType() {
-        guard let noteType = ankiNoteType else { return }
-        let available = Set(noteType.fields.map { $0.name })
-        let pruned = ankiFields.filter { available.contains($0.value) }
-        if pruned.count != ankiFields.count {
-            ankiFields = pruned
-        }
     }
 
     /// Fills unset tokens only, so a deliberate choice is never overwritten.
@@ -139,7 +200,10 @@ class SettingsModel: ObservableObject {
             get: { self.ankiFields[token.rawValue] },
             set: { newValue in
                 if let newValue = newValue {
-                    self.ankiFields[token.rawValue] = newValue
+                    // One field holds one value; a second token pointed at it takes it over.
+                    var updated = self.ankiFields.filter { $0.value != newValue }
+                    updated[token.rawValue] = newValue
+                    self.ankiFields = updated
                 } else {
                     self.ankiFields.removeValue(forKey: token.rawValue)
                 }
@@ -163,15 +227,15 @@ class SettingsModel: ObservableObject {
     }
 
     private func load<T: Codable>(forKey key: String) -> T? {
-        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        guard let data = defaults.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(T.self, from: data)
     }
     
     private func save<T: Codable>(_ value: T?, forKey key: String) {
         if let value = value, let data = try? JSONEncoder().encode(value) {
-            UserDefaults.standard.set(data, forKey: key)
+            defaults.set(data, forKey: key)
         } else {
-            UserDefaults.standard.removeObject(forKey: key)
+            defaults.removeObject(forKey: key)
         }
     }
     

@@ -11,7 +11,15 @@ import os
 import SwiftUI
 
 public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
+
+    /// Yomitan dictionaries may leave the reading empty to mean "same as the term".
+    var effectiveReading: String {
+        reading.isEmpty ? term : reading
+    }
+
     
+    var rowIdentity: ObjectIdentifier { ObjectIdentifier(self) }
+
     public static func == (lhs: TermDB, rhs: TermDB) -> Bool {
         return lhs.term == rhs.term && lhs.reading == rhs.reading && lhs.dictionary.id == rhs.dictionary.id
     }
@@ -50,65 +58,89 @@ public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
         self.termTags = termTags
         self.dictionary = dictionary
         self.exportedToAnki = exportedToAnki
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                guard let decoded = (try JSONSerialization.jsonObject(with: definitions)) as? [Any] else {
-                    DispatchQueue.main.async { self.parseDefinition = [] }
-                    return
-                }
+    }
 
-                let ret: [ContentDefinition] = decoded.compactMap { (x: Any) in
-                    if let def = x as? String {
-                        return .text(StringContent(content: def))
-                    }
-                    if let deinflection = x as? [Any] {
-                        guard deinflection.count == 2 else {
-                            Logger.dictionary.debug("Unhandled definition element: \(String(describing: x))")
-                            return nil
-                        }
-                        guard let uninflected = deinflection[0] as? String else {
-                            Logger.dictionary.debug("Unhandled definition element: \(String(describing: x))")
-                            return nil
-                        }
-                        guard let inflectionRulesStr = deinflection[1] as? [String] else {
-                            Logger.dictionary.debug("Unhandled definition element: \(String(describing: x))")
-                            return nil
-                        }
-                        let inflectionRules = inflectionRulesStr.compactMap { ir in
-                            InflectionRule(rawValue: ir)
-                        }
-                        return .deinflection(Deinflection(text: uninflected, inflections: inflectionRules, types: []))
-                    }
-                    if let detailedDef = x as? [String: Any] {
-                        guard let type = detailedDef["type"] as? String else {
-                            Logger.dictionary.debug("Detailed definition with no type")
-                            return nil
-                        }
-                        if type == "text" {
-                            guard let text = detailedDef["text"] as? String else {
-                                Logger.dictionary.debug("Text definition with no text")
-                                return nil
-                            }
-                            return .text(StringContent(content: text))
-                        }
-                        if type == "structured-content" {
-                            guard let content = detailedDef["content"] else { return nil }
-                            guard let parsedContent = TermDB.parseContent(map: content) else {return nil}
-                            return .detailed(parsedContent)
-                        }
-                    }
-                    Logger.dictionary.debug("Unrecognised definition shape: \(String(describing: x))")
-                    return nil
-                }
-                DispatchQueue.main.async { self.parseDefinition = ret }
-            } catch {
-                Logger.dictionary.debug("Definition decoding failed: \(error.localizedDescription)")
-                DispatchQueue.main.async { self.parseDefinition = [.text(StringContent(content: "\(error)"))] }
+    private var definitionsRequested = false
+    private var definitionsLoaded = false
+
+    func loadDefinitions() {
+        guard !definitionsRequested else { return }
+        definitionsRequested = true
+        let definitions = self.definitions
+        DispatchQueue.global(qos: .userInitiated).async {
+            let decoded = TermDB.decodeDefinitions(definitions)
+            DispatchQueue.main.async {
+                self.parseDefinition = decoded
+                self.definitionsLoaded = true
             }
         }
     }
-    
+
+    var loadedDefinitions: [ContentDefinition] {
+        if !definitionsLoaded {
+            parseDefinition = TermDB.decodeDefinitions(definitions)
+            definitionsLoaded = true
+        }
+        return parseDefinition
+    }
+
+    private static func decodeDefinitions(_ definitions: Data) -> [ContentDefinition] {
+        guard !definitions.isEmpty else { return [] }
+        do {
+            guard let decoded = (try JSONSerialization.jsonObject(with: definitions)) as? [Any] else {
+                return []
+            }
+
+            let ret: [ContentDefinition] = decoded.compactMap { (x: Any) in
+                if let def = x as? String {
+                    return .text(StringContent(content: def))
+                }
+                if let deinflection = x as? [Any] {
+                    guard deinflection.count == 2 else {
+                        Logger.dictionary.debug("Unhandled definition element: \(String(describing: x))")
+                        return nil
+                    }
+                    guard let uninflected = deinflection[0] as? String else {
+                        Logger.dictionary.debug("Unhandled definition element: \(String(describing: x))")
+                        return nil
+                    }
+                    guard let inflectionRulesStr = deinflection[1] as? [String] else {
+                        Logger.dictionary.debug("Unhandled definition element: \(String(describing: x))")
+                        return nil
+                    }
+                    let inflectionRules = inflectionRulesStr.compactMap { ir in
+                        InflectionRule(rawValue: ir)
+                    }
+                    return .deinflection(Deinflection(text: uninflected, inflections: inflectionRules, types: []))
+                }
+                if let detailedDef = x as? [String: Any] {
+                    guard let type = detailedDef["type"] as? String else {
+                        Logger.dictionary.debug("Detailed definition with no type")
+                        return nil
+                    }
+                    if type == "text" {
+                        guard let text = detailedDef["text"] as? String else {
+                            Logger.dictionary.debug("Text definition with no text")
+                            return nil
+                        }
+                        return .text(StringContent(content: text))
+                    }
+                    if type == "structured-content" {
+                        guard let content = detailedDef["content"] else { return nil }
+                        guard let parsedContent = TermDB.parseContent(map: content) else {return nil}
+                        return .detailed(parsedContent)
+                    }
+                }
+                Logger.dictionary.debug("Unrecognised definition shape: \(String(describing: x))")
+                return nil
+            }
+            return ret
+        } catch {
+            Logger.dictionary.debug("Definition decoding failed: \(error.localizedDescription)")
+            return [.text(StringContent(content: "\(error)"))]
+        }
+    }
+
     var parseDefinitionTags: [String] {
         []
     }
@@ -154,19 +186,17 @@ public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
             guard let parsedContent = parseContent(map: content) else {
                 return nil
             }
-            
-            
+            let role = (submap["data"] as? [String: Any])?["content"] as? String
+
             switch tag {
             case "rt", "rp":
                 return nil
             case "table", "thead", "tbody", "tfoot", "tr", "div", "li", "details", "summary":
-                if
-                    let data = submap["data"] as? [String: Any],
-                    let content = data["content"] as? String,
-                    content == "example-sentence" || content == "extra-info" || content == "attribution" {
+                if role == "example-sentence" || role == "extra-info" || role == "attribution" {
                     return nil
                 }
                 var tmpSCC = StructuredContentContainer(data: parsedContent, tag: tag)
+                tmpSCC.role = role
                 if let style = submap["style"] as? [String: Any] {
                     if let bg = style["backgroundColor"] as? String {
                         tmpSCC.backgroundColor = Color(hex: bg)
@@ -194,19 +224,19 @@ public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
             case "ul":
                 switch parsedContent {
                 case .array(let arrayCnt):
-                    var list = StructuredContentList(content: arrayCnt)
+                    var list = StructuredContentList(content: arrayCnt, role: role)
                     
                     if let style = submap["style"] as? [String: Any], let dotStyle = style["listStyleType"] as? String {
                         list.prefix = dotStyle.replacingOccurrences(of: "\"", with: "")
                     }
                     return .list(list)
                 default:
-                    return .list(StructuredContentList(content: [[parsedContent]]))
+                    return .list(StructuredContentList(content: [[parsedContent]], role: role))
                 }
             case "ol":
                 switch parsedContent {
                 case .array(let arrayCnt):
-                    var list = StructuredContentList(content: arrayCnt)
+                    var list = StructuredContentList(content: arrayCnt, role: role)
                     
                     if let style = submap["style"] as? [String: Any] {
                         if let dotStyle = style["listStyleType"] as? String {
@@ -215,7 +245,7 @@ public class TermDB: ObservableObject, Hashable, CustomStringConvertible {
                     }
                     return .numberedList(list)
                 default:
-                    return .numberedList(StructuredContentList(content: [[parsedContent]]))
+                    return .numberedList(StructuredContentList(content: [[parsedContent]], role: role))
                 }
             case "td", "th":
                 let cols = (submap["colSpan"] as? Int) ?? 1
@@ -266,6 +296,7 @@ public struct StructuredContentContainer: Hashable {
     public var backgroundColor: Color = Color.white.opacity(0)
     public var borders = [0]
     public var font: Font = .footnote
+    public var role: String? = nil
     
 }
 
@@ -280,6 +311,7 @@ public struct StructuredContentTable: Hashable {
 public struct StructuredContentList: Hashable, CustomStringConvertible {
     public var id: UUID { UUID() }
     let content: [[StructuredContent]]
+    var role: String? = nil
     var prefix = "\u{2022}"
     
     public var description: String {

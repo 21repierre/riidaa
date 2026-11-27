@@ -18,6 +18,7 @@ struct ZoomableModifier: ViewModifier {
     let minZoomScale: CGFloat
     let doubleTapZoomScale: CGFloat
     let onEdgeSwipe: ((ZoomEdgeSwipe) -> Void)?
+    let isCurrent: Bool
 
     @State private var lastTransform: CGAffineTransform = .identity
     @State private var transform: CGAffineTransform = .identity
@@ -31,6 +32,16 @@ struct ZoomableModifier: ViewModifier {
                         .onAppear {
                             contentSize = proxy.size
                         }
+                        .onChange(of: proxy.size) { size in
+                            contentSize = size
+                            settle(limitTransform(transform))
+                        }
+                }
+            }
+            .onChange(of: isCurrent) { current in
+                if !current {
+                    transform = .identity
+                    lastTransform = .identity
                 }
             }
             .animatableTransformEffect(transform)
@@ -49,9 +60,7 @@ struct ZoomableModifier: ViewModifier {
     private var oldMagnificationGesture: some Gesture {
         MagnificationGesture()
             .onChanged { value in
-                let zoomFactor = 0.5
-                let scale = value * zoomFactor
-                transform = lastTransform.scaledBy(x: scale, y: scale)
+                transform = lastTransform.scaledBy(x: value, y: value)
             }
             .onEnded { _ in
                 onEndGesture()
@@ -129,8 +138,10 @@ struct ZoomableModifier: ViewModifier {
     }
 
     private func onEndGesture() {
-        let newTransform = limitTransform(transform)
+        settle(limitTransform(transform))
+    }
 
+    private func settle(_ newTransform: CGAffineTransform) {
         withAnimation(.snappy(duration: 0.1)) {
             transform = newTransform
             lastTransform = newTransform
@@ -172,31 +183,16 @@ public extension View {
     func zoomable(
         minZoomScale: CGFloat = 1,
         doubleTapZoomScale: CGFloat = 2,
+        isCurrent: Bool = true,
         onEdgeSwipe: ((ZoomEdgeSwipe) -> Void)? = nil
     ) -> some View {
         modifier(ZoomableModifier(
             minZoomScale: minZoomScale,
             doubleTapZoomScale: doubleTapZoomScale,
-            onEdgeSwipe: onEdgeSwipe
+            onEdgeSwipe: onEdgeSwipe,
+            isCurrent: isCurrent
         ))
     }
-
-//    @ViewBuilder
-//    func zoomable(
-//        minZoomScale: CGFloat = 1,
-//        doubleTapZoomScale: CGFloat = 3,
-//        outOfBoundsColor: Color = .clear
-//    ) -> some View {
-//        GeometryReader { proxy in
-//            ZStack {
-//                outOfBoundsColor
-//                self.zoomable(
-//                    minZoomScale: minZoomScale,
-//                    doubleTapZoomScale: doubleTapZoomScale
-//                )
-//            }
-//        }
-//    }
 }
 
 private extension View {

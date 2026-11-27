@@ -11,7 +11,7 @@ import Apollo
 @main
 struct riidaaApp: App {
     
-    let CoreController = CoreDataManager.shared
+    @ObservedObject var CoreController = CoreDataManager.shared
     @StateObject var appManager: AppManager = AppManager.shared
     @StateObject var settings: SettingsModel = SettingsModel()
     
@@ -21,13 +21,18 @@ struct riidaaApp: App {
                 StoreUnavailableView(error: error)
             } else {
             HomeView()
+                .modifier(AppAlerts())
                 .environment(\.managedObjectContext, CoreController.context)
                 .environmentObject(appManager)
                 .environmentObject(settings)
+                .onOpenURL { url in
+                    settings.handleAnkiSetupCallback(url)
+                    AnkiExport.handleCallback(url)
+                }
                 .overlay(alignment: .bottom) {
                     if appManager.isLoading {
                         DictionaryLoadingBanner(text: "Loading dictionaries…", fraction: nil)
-                            .padding(.bottom, 60)
+                            .modifier(AboveTabBar())
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
@@ -37,7 +42,7 @@ struct riidaaApp: App {
                             text: "Clearing deleted dictionary… \(Int(purging.fraction * 100))%",
                             fraction: purging.fraction
                         )
-                        .padding(.bottom, 60)
+                        .modifier(AboveTabBar())
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
@@ -68,6 +73,55 @@ struct StoreUnavailableView: View {
                 .multilineTextAlignment(.center)
         }
         .padding(30)
+    }
+}
+
+struct AppAlerts: ViewModifier {
+    @ObservedObject private var store = CoreDataManager.shared
+    @ObservedObject private var appManager = AppManager.shared
+    @EnvironmentObject private var settings: SettingsModel
+
+    func body(content: Content) -> some View {
+        content
+            .alert(
+                "Couldn't save",
+                isPresented: Binding(
+                    get: { store.saveError != nil },
+                    set: { shown in if !shown { store.saveError = nil } }
+                ),
+                actions: { Button("OK", role: .cancel) {} },
+                message: { Text("The last change wasn't kept. \(store.saveError ?? "")") }
+            )
+            .alert(
+                "Dictionary error",
+                isPresented: Binding(
+                    get: { appManager.lastError != nil },
+                    set: { shown in if !shown { appManager.lastError = nil } }
+                ),
+                actions: { Button("OK", role: .cancel) {} },
+                message: { Text(appManager.lastError ?? "") }
+            )
+            .alert(
+                "Anki setup",
+                isPresented: Binding(
+                    get: { settings.ankiSetupError != nil },
+                    set: { shown in if !shown { settings.ankiSetupError = nil } }
+                ),
+                actions: { Button("OK", role: .cancel) {} },
+                message: { Text(settings.ankiSetupError ?? "") }
+            )
+    }
+}
+
+private struct AboveTabBar: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18, *), horizontalSizeClass == .regular, UIDevice.current.userInterfaceIdiom == .pad {
+            content.padding(.bottom, 16)
+        } else {
+            content.padding(.bottom, 60)
+        }
     }
 }
 

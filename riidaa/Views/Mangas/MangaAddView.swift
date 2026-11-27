@@ -35,6 +35,7 @@ struct MangaAddView: View {
                         .foregroundStyle(.secondary)
                 }
                 .accessibilityLabel("Close")
+                .keyboardShortcut(.cancelAction)
             }
             .padding(.horizontal)
 
@@ -48,25 +49,27 @@ struct MangaAddView: View {
             .padding(.bottom, 10)
 
             HStack(spacing: 8) {
-                TextField("Search AniList by title...", text: $mangaTitle, onCommit: searchMangas)
+                TextField("Search AniList by title\u{2026}", text: $mangaTitle)
                 .padding(10)
                 .background(Color(.secondarySystemBackground))
                 .cornerRadius(10)
                 .overlay(
                     HStack {
                         Spacer()
-                        Button(action: {
-                            mangaTitle = ""
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.gray)
-                                .scaleEffect(mangaTitle.isEmpty ? 0.5 : 1.2)
-                                .opacity(mangaTitle.isEmpty ? 0 : 1)
+                        if !mangaTitle.isEmpty {
+                            Button(action: {
+                                mangaTitle = ""
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.gray)
+                                    .scaleEffect(1.2)
+                            }
+                            .accessibilityLabel("Clear search")
+                            .padding(.trailing, 8)
+                            .transition(.scale.combined(with: .opacity))
                         }
-                        .padding(.trailing, 8)
-                        .transition(.scale.combined(with: .opacity))
-                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: mangaTitle)
                     }
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: mangaTitle.isEmpty)
                 )
                 .focused($isTextFieldFocused)
                 .submitLabel(.search)
@@ -84,7 +87,7 @@ struct MangaAddView: View {
                         ProgressView()
                             .controlSize(.regular)
                             .scaleEffect(2)
-                        Text("Searching...")
+                        Text("Searching\u{2026}")
                             .font(.headline)
                             .foregroundColor(.gray)
                             .padding(.top, 20)
@@ -106,7 +109,6 @@ struct MangaAddView: View {
                 } else if searchMangasList.isEmpty && mangaTitle == "" {
                     VStack {
                         Image(systemName: "book.closed")
-                        //                            .font(.largeTitle)
                             .scaleEffect(2)
                             .foregroundColor(.gray)
                         Text("Search AniList for a title")
@@ -126,6 +128,7 @@ struct MangaAddView: View {
             isTextFieldFocused = true
         }
         .background(Color(.systemBackground))
+        .modifier(AppAlerts())
     }
     
     private func applyResults(_ results: [MangaResultModel], matchesFound: Int) {

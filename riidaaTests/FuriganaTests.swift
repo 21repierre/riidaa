@@ -27,6 +27,17 @@ struct FuriganaTests {
         #expect(Furigana.annotate(term: "立ち上がる", reading: "たちあがる") == "立[た]ち 上[あ]がる")
     }
 
+    /// The reading of the dictionary form carries over to the stem the inflected form shares.
+    @Test func annotatesInflectedForms() {
+        #expect(Furigana.annotate(surface: "流れ出た", term: "流れ出る", reading: "ながれでる") == "流[なが]れ 出[で]た")
+        #expect(Furigana.annotate(surface: "飛び移った", term: "飛び移る", reading: "とびうつる") == "飛[と]び 移[うつ]った")
+        #expect(Furigana.annotate(surface: "似合う", term: "似合い", reading: "にあい") == "似合[にあ]う")
+        #expect(Furigana.annotate(surface: "当機", term: "当機", reading: "とうき") == "当機[とうき]")
+        #expect(Furigana.annotate(surface: "おもった", term: "思う", reading: "おもう") == nil)
+        #expect(Furigana.annotate(surface: "来た", term: "来る", reading: "くる") == nil)
+        #expect(Furigana.annotate(surface: "帰って来た", term: "帰って来る", reading: "かえってくる") == nil)
+    }
+
     /// ヶ reads か, so the kana can't be anchored; one coarse group is still valid furigana.
     @Test func handlesReadingsThatDoNotLineUp() {
         #expect(Furigana.annotate(term: "ヶ月", reading: "かげつ") == "ヶ月[かげつ]")

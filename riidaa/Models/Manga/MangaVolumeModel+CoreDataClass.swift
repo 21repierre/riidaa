@@ -12,4 +12,6 @@ import CoreData
 @objc(MangaVolumeModel)
 public class MangaVolumeModel: NSManagedObject {
 
+    var resolvedDirectory: (number: Int64, url: URL)?
+
 }

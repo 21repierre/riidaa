@@ -643,6 +643,19 @@ public enum InflectionRule: String, Sendable, Identifiable {
                     ]
                 ])
             )
+        case .suru:
+            InflectionDescription(
+                short: "ーする",
+                description: .array([
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Makes a noun into a verb, as in 勉強する.")), tag: "span", font: .body))],
+                    [.inlineContainer(StructuredContentContainer(data: .text(StringContent(content: "Usage:")), tag: "span", font: .title))],
+                    [
+                        .list(StructuredContentList(content: [
+                            [.text(StringContent(content: "Attach する to a noun marked as taking it (する verb, vs)."))]
+                        ]))
+                    ]
+                ])
+            )
         case .continuative:
             InflectionDescription(
                 short: "continuative",
@@ -1074,6 +1087,7 @@ public enum InflectionRule: String, Sendable, Identifiable {
     case ku = "ーく"
     case imperative = "imperative"
     case continuative = "continuative"
+    case suru = "ーする"
     case sa = "ーさ"
     case passive = "passive"
     case potential = "potential"

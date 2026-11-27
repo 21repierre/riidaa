@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import UIKit
 import os
 import ZIPFoundation
 
@@ -14,6 +15,7 @@ enum DictionaryImportError: LocalizedError {
     case missingProperties
     case alreadyInstalled(String)
     case emptyArchive
+    case noReadableEntries
     case decoding(String)
     case saving(String)
 
@@ -31,6 +33,8 @@ enum DictionaryImportError: LocalizedError {
             return message
         case .emptyArchive:
             return "This dictionary contains no term or metadata banks."
+        case .noReadableEntries:
+            return "None of this dictionary's entries could be read. It may use an older format riidaa doesn't support."
         case .decoding(let what):
             return "Error decoding \(what)"
         case .saving(let what):
@@ -103,9 +107,9 @@ enum DictionaryBank {
                   let term = row[0] as? String,
                   let reading = row[1] as? String,
                   let wordTypes = row[3] as? String,
-                  let score = row[4] as? Int64,
+                  let score = (row[4] as? NSNumber).map({ Int64($0.doubleValue.rounded()) }),
                   let definitions = row[5] as? [Any],
-                  let sequence = row[6] as? Int64,
+                  let sequence = (row[6] as? NSNumber)?.int64Value,
                   let termTags = row[7] as? String,
                   let definitionsEncoded = try? JSONSerialization.data(withJSONObject: definitions)
             else {
@@ -141,6 +145,27 @@ enum DictionaryBank {
 
 }
 
+private final class ImportBackgroundTask {
+    private var identifier = UIBackgroundTaskIdentifier.invalid
+    private let lock = NSLock()
+
+    init() {
+        identifier = UIApplication.shared.beginBackgroundTask(withName: "Dictionary import") { [weak self] in
+            self?.end()
+        }
+    }
+
+    func end() {
+        lock.lock()
+        let ending = identifier
+        identifier = .invalid
+        lock.unlock()
+        if ending != .invalid {
+            UIApplication.shared.endBackgroundTask(ending)
+        }
+    }
+}
+
 /// Progress is reported through `AppManager` so it outlives the screen that started it.
 final class DictionaryImporter {
 
@@ -161,6 +186,8 @@ final class DictionaryImporter {
 
     func importArchive(at path: URL, securityScoped: Bool = true, replacing: Int64? = nil) {
         DictionaryImporter.queue.async { [appManager] in
+            let backgroundTask = ImportBackgroundTask()
+            defer { backgroundTask.end() }
             let installedSnapshot = DispatchQueue.main.sync { appManager.dictionaries }
             let fileManager = FileManager.default
             let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -199,10 +226,20 @@ final class DictionaryImporter {
                 try fileManager.createDirectory(at: dicDirectory, withIntermediateDirectories: true)
                 try fileManager.unzipItem(at: path, to: dicDirectory)
 
-                total = try fileManager.contentsOfDirectory(at: dicDirectory, includingPropertiesForKeys: nil).count
+                var contentDirectory = dicDirectory
+                let topLevel = try fileManager.contentsOfDirectory(at: dicDirectory, includingPropertiesForKeys: nil)
+                    .filter { $0.lastPathComponent != "__MACOSX" }
+                if !fileManager.fileExists(atPath: dicDirectory.appendingPathComponent("index.json").path),
+                   topLevel.count == 1, fileManager.isDirectory(at: topLevel[0]) {
+                    contentDirectory = topLevel[0]
+                }
+
+                let termBanks = DictionaryImporter.banks(named: "term_bank", in: contentDirectory)
+                let metaBanks = DictionaryImporter.banks(named: "term_meta_bank", in: contentDirectory)
+                total = termBanks.count + metaBanks.count + 1
                 report("Processing dictionary…")
 
-                guard let indexData = try? Data(contentsOf: dicDirectory.appendingPathComponent("index.json")) else {
+                guard let indexData = try? Data(contentsOf: contentDirectory.appendingPathComponent("index.json")) else {
                     throw DictionaryImportError.missingIndex
                 }
                 let index = try DictionaryIndex(json: try JSONSerialization.jsonObject(with: indexData))
@@ -255,45 +292,51 @@ final class DictionaryImporter {
                 var importedTerms = 0
                 var importedMeta = 0
 
-                var i = 1
-                while let bank = try? Data(contentsOf: dicDirectory.appending(component: "term_bank_\(i).json")) {
+                for bankURL in termBanks {
                     try autoreleasepool {
                         let rows = try DictionaryBank.terms(
-                            from: try JSONSerialization.jsonObject(with: bank), dictionaryId: dictionary.id
+                            from: try JSONSerialization.jsonObject(with: try Data(contentsOf: bankURL)),
+                            dictionaryId: dictionary.id
                         )
                         guard SQLiteManager.shared.insertTerms(termsInsert: rows) != nil else {
                             throw DictionaryImportError.saving("terms")
                         }
                         importedTerms += rows.count
-                        i += 1
                         done += 1
                         report("Processing dictionary…")
                     }
                 }
 
                 // Pitch and frequency dictionaries ship no term_bank files at all.
-                var m = 1
-                while let bank = try? Data(contentsOf: dicDirectory.appending(component: "term_meta_bank_\(m).json")) {
+                for bankURL in metaBanks {
                     try autoreleasepool {
                         let rows = try DictionaryBank.meta(
-                            from: try JSONSerialization.jsonObject(with: bank), dictionaryId: dictionary.id
+                            from: try JSONSerialization.jsonObject(with: try Data(contentsOf: bankURL)),
+                            dictionaryId: dictionary.id
                         )
                         guard SQLiteManager.shared.insertTermMeta(metaInsert: rows) != nil else {
                             throw DictionaryImportError.saving("term metadata")
                         }
                         importedMeta += rows.count
-                        m += 1
                         done += 1
                         report("Processing dictionary…")
                     }
                 }
 
-                if i == 1 && m == 1 {
+                if termBanks.isEmpty && metaBanks.isEmpty {
                     throw DictionaryImportError.emptyArchive
+                }
+                if importedTerms + importedMeta == 0 {
+                    throw DictionaryImportError.noReadableEntries
                 }
 
                 // Removed only once the replacement is safely in, so a failed update can't
                 // leave the user with nothing.
+                report("Finishing\u{2026}")
+                if let replacing = replacing {
+                    SQLiteManager.shared.copyExportedMarks(from: replacing, to: dictionary.id)
+                }
+                try SQLiteManager.shared.markImportComplete(dictionaryId: dictionary.id)
                 if let replacing = replacing {
                     try SQLiteManager.shared.deleteDictionary(dictionaryId: replacing)
                 }
@@ -318,6 +361,19 @@ final class DictionaryImporter {
                 }
             }
         }
+    }
+
+    static func banks(named prefix: String, in directory: URL) -> [URL] {
+        let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+        return files
+            .compactMap { url -> (Int, URL)? in
+                let name = url.lastPathComponent
+                guard name.hasPrefix(prefix + "_"), name.hasSuffix(".json"),
+                      let number = Int(name.dropFirst(prefix.count + 1).dropLast(5)) else { return nil }
+                return (number, url)
+            }
+            .sorted { $0.0 < $1.0 }
+            .map(\.1)
     }
 
 }

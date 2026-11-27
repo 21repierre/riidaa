@@ -26,11 +26,13 @@ struct StatsView: View {
                         .tag(offset)
                 }
             }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
+            .indexViewStyle(.page(backgroundDisplayMode: .always))
             .frame(maxHeight: 300)
             
             Spacer()
         }
+        .navigationTitle("Stats")
         .onAppear {
             do {
                 try fetchPageRead()
@@ -128,12 +130,23 @@ struct BarChartView: View {
 
                         Text(shortWeekday(from: item.day))
                             .font(.caption2)
+                            .lineLimit(1)
+                            .fixedSize()
                             .rotationEffect(.degrees(-45))
                             .frame(height: 30)
                     }
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Pages read")
+        .accessibilityValue(weekStats.map { "\(longWeekday(from: $0.day)): \($0.count)" }.joined(separator: ", "))
+    }
+
+    private func longWeekday(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE"
+        return formatter.string(from: date)
     }
 }
 

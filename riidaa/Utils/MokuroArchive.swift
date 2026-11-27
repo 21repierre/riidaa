@@ -58,11 +58,14 @@ enum MokuroArchive {
         let container = mokuroFile.deletingLastPathComponent()
         if holds(container) { return container }
 
+        func holdsAll(_ directory: URL) -> Bool {
+            pages.allSatisfy { fileManager.fileExists(atPath: directory.appendingPathComponent($0).path) }
+        }
         guard let walker = fileManager.enumerator(at: root, includingPropertiesForKeys: [.isDirectoryKey]) else {
             return nil
         }
         for case let url as URL in walker where !url.path.contains("__MACOSX") {
-            guard fileManager.isDirectory(at: url), holds(url) else { continue }
+            guard fileManager.isDirectory(at: url), holds(url), holdsAll(url) else { continue }
             return url
         }
         return nil
@@ -78,12 +81,12 @@ enum MokuroArchive {
     }
 
     static func volumeNumber(from volume: String, title: String) -> Int64? {
-        let cleaned = volume.replacingOccurrences(
+        let cleaned = volume.fullwidthAlphanumericsToASCII().replacingOccurrences(
             of: "[\\[(][^\\])]*[\\])]", with: " ", options: .regularExpression
         )
         let patterns = ["第\\s*(\\d{1,4})\\s*巻", "(?:^|[\\s._-])v(?:ol(?:ume)?)?[\\s._-]*(\\d{1,4})(?![\\d])", "(\\d{1,4})(?!.*\\d)"]
         for pattern in patterns {
-            guard let match = cleaned.range(of: pattern, options: .regularExpression) else { continue }
+            guard let match = cleaned.range(of: pattern, options: [.regularExpression, .caseInsensitive]) else { continue }
             let digits = cleaned[match].filter { $0.isNumber }
             if let number = Int64(digits) { return number }
         }

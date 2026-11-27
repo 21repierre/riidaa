@@ -38,6 +38,8 @@ class SQLiteManager {
     let sourceLanguage = SQLite.Expression<String?>("sourceLanguage")
     let targetLanguage = SQLite.Expression<String?>("targetLanguage")
     let frequencyMode = SQLite.Expression<String?>("frequencyMode")
+    let conjugates = SQLite.Expression<Bool?>("conjugates")
+    let importComplete = SQLite.Expression<Bool>("importComplete")
 
     // Term
     let term = SQLite.Expression<String>("term")
@@ -82,6 +84,79 @@ class SQLiteManager {
         installedLock.lock()
         installed = Dictionary(dictionaries.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
         installedLock.unlock()
+    }
+
+    private var conjugationRules: [Int64: Bool] = [:]
+    private let conjugationRulesLock = NSLock()
+
+    func usesConjugationRules(dictionaryId: Int64) -> Bool {
+        conjugationRulesLock.lock()
+        if let known = conjugationRules[dictionaryId] {
+            conjugationRulesLock.unlock()
+            return known
+        }
+        conjugationRulesLock.unlock()
+
+        let stored: Bool? = onReader { connection in
+            (try? connection?.pluck(dictionaries.select(conjugates).filter(id == dictionaryId)))?
+                .flatMap { $0[self.conjugates] }
+        }
+        if let stored = stored {
+            remember(stored, for: dictionaryId)
+            return stored
+        }
+
+        let found = onReader { hasWordTypes(dictionaryId: dictionaryId, on: $0) }
+        remember(found, for: dictionaryId)
+        access.async { self.store(found, for: dictionaryId) }
+        return found
+    }
+
+    func markImportComplete(dictionaryId: Int64) throws {
+        let found = try perform { () -> Bool in
+            guard let db = db else { throw DatabaseError.unavailable }
+            let found = hasWordTypes(dictionaryId: dictionaryId, on: db)
+            store(found, for: dictionaryId)
+            try db.run(dictionaries.filter(id == dictionaryId).update(importComplete <- true))
+            return found
+        }
+        remember(found, for: dictionaryId)
+    }
+
+    func discardIncompleteDictionaries() {
+        perform {
+            do {
+                let removed = try db?.run(dictionaries.filter(importComplete == false).delete()) ?? 0
+                if removed > 0 {
+                    Logger.database.info("Discarded \(removed) partly imported dictionaries")
+                }
+            } catch {
+                Logger.database.error("Failed to discard partial imports: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    private func hasWordTypes(dictionaryId: Int64, on connection: Connection?) -> Bool {
+        (try? connection?.scalar("SELECT 1 FROM terms WHERE dictionaryId = ? AND wordTypes != '' LIMIT 1", dictionaryId)) != nil
+    }
+
+    private func store(_ conjugates: Bool, for dictionaryId: Int64) {
+        do {
+            try db?.run(dictionaries.filter(id == dictionaryId).update(self.conjugates <- conjugates))
+        } catch {
+            Logger.database.error("Failed to store conjugation flag: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    private func onReader<T>(_ work: (Connection?) -> T) -> T {
+        guard let reader = reader else { return perform { work(db) } }
+        return performRead { work(reader) }
+    }
+
+    private func remember(_ conjugates: Bool, for dictionaryId: Int64) {
+        conjugationRulesLock.lock()
+        conjugationRules[dictionaryId] = conjugates
+        conjugationRulesLock.unlock()
     }
 
     private func installedDictionaries() -> [Int64: DictionaryDB] {
@@ -155,6 +230,19 @@ class SQLiteManager {
         }
 
         do {
+            try db?.run(dictionaries.addColumn(conjugates))
+        } catch {
+            // Column already present.
+        }
+
+        do {
+            // Dictionaries installed before the column existed finished importing.
+            try db?.run(dictionaries.addColumn(importComplete, defaultValue: true))
+        } catch {
+            // Column already present.
+        }
+
+        do {
             try db?.run("PRAGMA wal_checkpoint(TRUNCATE)")
         } catch {
             Logger.database.error("Checkpoint failed: \(error.localizedDescription, privacy: .public)")
@@ -218,36 +306,41 @@ class SQLiteManager {
         shouldContinue: () -> Bool = { true },
         progress: ((_ cleared: Int, _ total: Int) -> Void)? = nil
     ) {
-        let orphanCondition = "dictionaryId NOT IN (SELECT id FROM dictionaries)"
         let tables = ["terms", "term_meta"]
 
-        let total: Int = perform {
-            guard let db = db else { return 0 }
-            return tables.reduce(0) { running, table in
+        // Deleting by dictionary uses the dictionaryId index
+        let orphans: [(table: String, dictionaryId: Int64, count: Int)] = perform {
+            guard let db = db else { return [] }
+            var found: [(table: String, dictionaryId: Int64, count: Int)] = []
+            for table in tables {
                 do {
-                    guard let value = try db.scalar("SELECT count(*) FROM \(table) WHERE \(orphanCondition)") as? Int64 else {
-                        return running
+                    let rows = try db.prepare(
+                        "SELECT dictionaryId, count(*) FROM \(table) WHERE dictionaryId NOT IN (SELECT id FROM dictionaries) GROUP BY dictionaryId"
+                    )
+                    for row in rows {
+                        if let id = row[0] as? Int64, let count = row[1] as? Int64 {
+                            found.append((table, id, Int(count)))
+                        }
                     }
-                    return running + Int(value)
                 } catch {
                     Logger.database.error("Failed to count orphaned entries in \(table, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                    return running
                 }
             }
+            return found
         }
+        let total = orphans.reduce(0) { $0 + $1.count }
         guard total > 0 else { return }
 
         var cleared = 0
-        var finished = false
         progress?(cleared, total)
 
-        for table in tables {
-            let statement = "DELETE FROM \(table) WHERE rowid IN (SELECT rowid FROM \(table) WHERE \(orphanCondition) LIMIT ?)"
+        for orphan in orphans {
+            let statement = "DELETE FROM \(orphan.table) WHERE rowid IN (SELECT rowid FROM \(orphan.table) WHERE dictionaryId = ? LIMIT ?)"
             while shouldContinue() {
                 let removed: Int = perform {
                     guard let db = db else { return 0 }
                     do {
-                        try db.run(statement, batchSize)
+                        try db.run(statement, orphan.dictionaryId, batchSize)
                         return db.changes
                     } catch {
                         Logger.database.error("Purge failed: \(error.localizedDescription, privacy: .public)")
@@ -257,14 +350,26 @@ class SQLiteManager {
                 if removed == 0 { break }
                 cleared += removed
                 progress?(cleared, total)
-                finished = cleared >= total
                 // Let anything waiting on the database in ahead of the next batch.
                 Thread.sleep(forTimeInterval: 0.02)
             }
         }
 
-        if finished {
+        if cleared >= total {
             progress?(total, total)
+        }
+    }
+
+    func copyExportedMarks(from old: Int64, to new: Int64) {
+        perform {
+            do {
+                try db?.run(
+                    "UPDATE terms SET exportedToAnki = 1 WHERE rowid IN (SELECT current.rowid FROM terms AS previous JOIN terms AS current ON current.term = previous.term AND current.reading = previous.reading WHERE previous.dictionaryId = ? AND previous.exportedToAnki = 1 AND current.dictionaryId = ?)",
+                    old, new
+                )
+            } catch {
+                Logger.database.error("Failed to carry over Anki exports: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
     
@@ -289,7 +394,8 @@ class SQLiteManager {
             self.attribution <- attribution,
             self.sourceLanguage <- sourceLanguage,
             self.targetLanguage <- targetLanguage,
-            self.frequencyMode <- frequencyMode
+            self.frequencyMode <- frequencyMode,
+            self.importComplete <- false
         )
         do {
             let dicId = try db?.run(insertQuery)
@@ -380,7 +486,7 @@ class SQLiteManager {
                 guard let dictionary = dictionaries[row[self.dictionaryId]] else {
                     continue
                 }
-                guard let raw = try? JSONSerialization.jsonObject(with: row[metaData]),
+                guard let raw = try? JSONSerialization.jsonObject(with: row[metaData], options: [.fragmentsAllowed]),
                       let parsed = TermMetaParser.parse(mode: row[metaMode], data: raw) else {
                     continue
                 }

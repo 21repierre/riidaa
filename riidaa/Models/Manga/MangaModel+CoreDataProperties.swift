@@ -70,7 +70,6 @@ extension MangaModel {
     }
     
     public func getCover() -> UIImage? {
-//        print("has cover \(self.cover != nil)")
         if let cover = self.cover {
             return UIImage(data: cover)
         } else {
@@ -84,9 +83,10 @@ extension MangaModel {
             DispatchQueue.main.async { completion(false) }
             return
         }
-        URLSession.shared.dataTask(with: url) { data, _, error in
+        URLSession.shared.dataTask(with: url) { data, response, error in
             DispatchQueue.main.async {
-                guard let data = data, error == nil else {
+                let succeeded = (response as? HTTPURLResponse).map { (200..<300).contains($0.statusCode) } ?? true
+                guard let data = data, error == nil, succeeded, UIImage(data: data) != nil else {
                     completion(false)
                     return
                 }

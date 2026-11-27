@@ -70,9 +70,52 @@ struct TermMetaStorageTests {
         #expect(found.count == 3)
 
         // The entry for the other reading is filtered out.
-        let summary = TermMetaSummary(meta: found, reading: "ふさい")
+        let summary = TermMetaSummary(meta: found, term: "夫妻", reading: "ふさい")
         #expect(summary.frequencyLabels == ["RoundTrip: 6923"])
         #expect(summary.pitchPositions == ["[1]"])
+    }
+
+    /// An update carries "already sent to Anki" across by term and reading, and only that.
+    @Test func carriesExportMarksToTheUpdatedCopy() throws {
+        guard let old = makeDictionary("MarksOld"), let new = makeDictionary("MarksNew") else {
+            Issue.record("no dictionary"); return
+        }
+        defer { forget(old); forget(new) }
+
+        func insert(_ dictionary: DictionaryDB, _ rows: [(String, String)]) {
+            _ = SQLiteManager.shared.insertTerms(termsInsert: rows.map {
+                TermInsertion(term: $0.0, reading: $0.1, definitionTags: "", wordTypes: "", score: 0,
+                              definitions: Data(#"["a gloss"]"#.utf8), sequence: 0, termTags: "",
+                              dictionaryId: dictionary.id)
+            })
+        }
+        insert(old, [("接客", "せっきゃく"), ("上手", "じょうず"), ("上手", "うわて")])
+        insert(new, [("接客", "せっきゃく"), ("上手", "じょうず"), ("上手", "うわて"), ("掃除", "そうじ")])
+        let db = try #require(SQLiteManager.shared.getDatabase())
+        try db.run("UPDATE terms SET exportedToAnki = 1 WHERE dictionaryId = ? AND reading IN ('せっきゃく', 'うわて')", old.id)
+
+        SQLiteManager.shared.copyExportedMarks(from: old.id, to: new.id)
+
+        var marked: [String] = []
+        for row in try db.prepare("SELECT reading FROM terms WHERE dictionaryId = ? AND exportedToAnki = 1 ORDER BY reading", new.id) {
+            marked.append(row[0] as? String ?? "")
+        }
+        #expect(marked == ["うわて", "せっきゃく"])
+    }
+
+    /// Yomitan allows a frequency to be a bare number or string, which the importer stores as a
+    /// JSON fragment.
+    @Test func readsBackBareFrequencies() throws {
+        guard let dictionary = makeDictionary("Bare") else { Issue.record("no dictionary"); return }
+        defer { forget(dictionary) }
+
+        #expect(SQLiteManager.shared.insertTermMeta(metaInsert: [
+            TermMetaInsertion(term: "の", reading: "", mode: "freq", data: blob("3"), dictionaryId: dictionary.id),
+            TermMetaInsertion(term: "食べる", reading: "", mode: "freq", data: blob(#""1234""#), dictionaryId: dictionary.id),
+        ]) != nil)
+
+        let found = SQLiteManager.shared.findTermMeta(texts: ["の", "食べる"]).filter { $0.dictionary.id == dictionary.id }
+        #expect(found.count == 2)
     }
 
     /// Wadoku ships 10,000 entries per bank, which is 50,000 bind parameters against SQLite's

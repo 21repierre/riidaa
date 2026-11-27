@@ -10,6 +10,7 @@ import SwiftUI
 struct SelectedLine: Equatable {
     let text: String
     let page: Int64
+    var box: CGRect? = nil
 }
 
 struct MangaReaderBoxes: View {
@@ -23,6 +24,13 @@ struct MangaReaderBoxes: View {
     var offsetY: Double
 
     @Binding var currentLine: SelectedLine?
+
+    private func select(_ box: PageBoxModel) {
+        currentLine = SelectedLine(
+            text: box.text, page: pageNumber,
+            box: CGRect(x: Int(box.x), y: Int(box.y), width: Int(box.width), height: Int(box.height))
+        )
+    }
 
     var body: some View {
         ForEach(boxes, id: \.self) { box in
@@ -40,14 +48,19 @@ struct MangaReaderBoxes: View {
                 width: Double(box.width) * scale + settings.padding,
                 height: Double(box.height) * scale + settings.padding
             )
+            .hoverEffect(.highlight)
+            .rotationEffect(Angle(degrees: box.rotation))
             .offset(
                 x: Double(box.x + box.width / 2) * scale - offsetX,
                 y: Double(box.y + box.height / 2) * scale - offsetY
             )
-            .rotationEffect(Angle(degrees: box.rotation))
             .highPriorityGesture(SpatialTapGesture(count: 1).onEnded { _ in
-                currentLine = SelectedLine(text: box.text, page: pageNumber)
+                select(box)
             })
+            .accessibilityElement()
+            .accessibilityLabel(box.text)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { select(box) }
         }
     }
 }

@@ -29,36 +29,21 @@ struct MangaAddResultView : View {
     @Environment(\.managedObjectContext) var moc
     
     @State var customImage: PhotosPickerItem? = nil
+    @State private var adding = false
     
-    let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+    let columns = [GridItem(.adaptive(minimum: 100), spacing: 12)]
     
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 8) {
+            LazyVGrid(columns: columns, spacing: 12) {
                 Button {
                     createManga(cover: nil)
                 } label: {
-                    VStack(alignment: .leading, spacing: 0) {
+                    card(title: "Create without cover") {
                         Image(systemName: "plus")
-                            .scaleEffect(2)
+                            .font(.title)
                             .foregroundColor(.gray)
-                            .frame(width: 110, height: 170)
-                            .background(Color(.systemGray3))
-                            .cornerRadius(10)
-
-                        VStack() {
-                            Text("Create without cover")
-                                .font(.callout)
-                                .foregroundColor(.primary)
-                                .lineLimit(2)
-                                .truncationMode(.tail)
-                            Spacer()
-                        }
-                        .frame(height: 49)
-                        .padding(.top, 7)
-                        .padding([.leading, .trailing], 1)
                     }
-                    .frame(height: 226)
                 }
                 .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
@@ -67,93 +52,87 @@ struct MangaAddResultView : View {
                     matching: .images,
                     photoLibrary: .shared()
                 ) {
-                    VStack(alignment: .leading,spacing: 0) {
+                    card(title: "Create with a photo") {
                         Image(systemName: "photo")
-                            .scaleEffect(2)
+                            .font(.title)
                             .foregroundColor(.gray)
-                            .frame(width: 110, height: 170)
-                            .background(Color(.systemGray3))
-                            .cornerRadius(10)
-                        
-                        
-                        VStack() {
-                            Text("Create with a photo")
-                                .font(.callout)
-                                .foregroundColor(.primary)
-                                .lineLimit(2)
-                                .truncationMode(.tail)
-                            Spacer()
-                        }
-                        .frame(height: 49)
-                        .padding(.top, 7)
-                        .padding([.leading, .trailing], 1)
                     }
                 }
-                ForEach($searchMangasList) { manga in
-                    Button(action: {
-                        let newManga = MangaModel(
-                            context: self.moc
-                        )
-                        newManga.id = UUID()
-                        newManga.added_at = NSDate()
-                        newManga.anilist_id = manga.id as NSNumber
-                        newManga.title = manga.title.wrappedValue
-                        newManga.downloadCover(url: manga.wrappedValue.coverImage, completion: { _ in
-                            CoreDataManager.shared.saveContext()
-                            dismiss()
-                        })
-                    }) {
-                        VStack(alignment: .leading,spacing: 0) {
-                            AsyncImage(url: URL(string: manga.coverImage.wrappedValue)) { phase in
+                .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                ForEach(searchMangasList) { manga in
+                    Button {
+                        add(manga)
+                    } label: {
+                        card(title: manga.title) {
+                            AsyncImage(url: URL(string: manga.coverImage)) { phase in
                                 switch phase {
-                                case .empty:
-                                    ProgressView()
-                                        .scaleEffect(1.5)
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .gray))
                                 case .success(let image):
                                     image
                                         .resizable()
                                         .scaledToFill()
-                                        .frame( height: 170)
-                                        .clipped()
-                                case .failure(let error):
-                                    Text("Failed to load image: \(error)")
-                                        .font(.caption)
-                                        .foregroundColor(.primary)
-                                @unknown default:
-                                    Text("Failed to load image")
-                                        .font(.caption)
-                                        .foregroundColor(.primary)
+                                case .failure:
+                                    Image(systemName: "book.closed")
+                                        .font(.title2)
+                                        .foregroundStyle(.secondary)
+                                default:
+                                    ProgressView()
                                 }
                             }
-                            .frame(width: 110, height: 170)
-                            .cornerRadius(10)
-                            
-                            VStack() {
-                                Text(manga.wrappedValue.title)
-                                    .font(.callout)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(2)
-                                    .truncationMode(.tail)
-                                Spacer()
-                            }
-                            .frame(height: 49)
-                            .padding(.top, 7)
-                            .padding([.leading, .trailing], 1)
-                            //                                .border(.green)
                         }
-                        .frame(height: 226)
-                        //                        .border(.blue)
                     }
                 }
-            }.padding()
+            }
+            .padding()
+            .disabled(adding)
         }
+        .overlay {
+            if adding {
+                ProgressView("Adding\u{2026}")
+                    .padding()
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .interactiveDismissDisabled(adding)
         .onChange(of: customImage) { value in
+            guard let value = value else { return }
+            customImage = nil
             Task {
-                if let value = value, let data = try? await value.loadTransferable(type: Data.self) {
+                if let data = try? await value.loadTransferable(type: Data.self) {
                     createManga(cover: data)
                 }
             }
+        }
+    }
+
+    private func card<Cover: View>(title: String, @ViewBuilder cover: () -> Cover) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Color(.systemGray5)
+                .aspectRatio(110.0 / 170.0, contentMode: .fit)
+                .overlay { cover() }
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            Text(title)
+                .font(.callout)
+                .foregroundColor(.primary)
+                .lineLimit(2, reservesSpace: true)
+                .truncationMode(.tail)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func add(_ manga: MangaResultModel) {
+        guard !adding else { return }
+        adding = true
+        let newManga = MangaModel(context: self.moc)
+        newManga.id = UUID()
+        newManga.added_at = NSDate()
+        newManga.anilist_id = manga.id as NSNumber
+        newManga.title = manga.title
+        newManga.downloadCover(url: manga.coverImage) { _ in
+            CoreDataManager.shared.saveContext()
+            adding = false
+            dismiss()
         }
     }
 
@@ -163,26 +142,11 @@ struct MangaAddResultView : View {
         guard !trimmed.isEmpty else { return }
         let newManga = MangaModel(context: self.moc)
         newManga.id = UUID()
-                        newManga.added_at = NSDate()
+        newManga.added_at = NSDate()
         newManga.title = trimmed
         newManga.cover = cover
         CoreDataManager.shared.saveContext()
         dismiss()
-    }
-    
-    
-    
-    
-    private func addManga(manga: MangaResultModel) {
-        let newManga = MangaModel(context: self.moc)
-        newManga.id = UUID()
-                        newManga.added_at = NSDate()
-        newManga.anilist_id = manga.id as NSNumber
-        newManga.title = manga.title
-        newManga.downloadCover(url: manga.coverImage) { _ in
-            CoreDataManager.shared.saveContext()
-            dismiss()
-        }
     }
     
 }

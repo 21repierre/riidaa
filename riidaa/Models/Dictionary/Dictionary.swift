@@ -8,10 +8,13 @@
 
 import Foundation
 import os
-import ZIPFoundation
 
 public enum UpdateState: Codable {
-    case unknown, upToDate, updateAvailable
+    case unknown
+    case upToDate
+    case updateAvailable
+    case checkFailed
+    case notUpdatable
 }
 
 class DictionaryDB: Hashable, ObservableObject, Identifiable {
@@ -63,91 +66,33 @@ class DictionaryDB: Hashable, ObservableObject, Identifiable {
     var targetLanguage: String? = nil
     var frequencyMode: String? = nil
     
-    // Observable property
-    var hasUpdate: UpdateState = .upToDate
+    @Published var hasUpdate: UpdateState = .unknown
 }
 
 extension DictionaryDB {
     
+    @MainActor
     func fetchUpdate() async {
-        guard let indexUrl = self.indexUrl, let url = URL(string: indexUrl) else {
+        guard isUpdatable, let indexUrl = self.indexUrl, let url = URL(string: indexUrl) else {
+            hasUpdate = .notUpdatable
             return
         }
         
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let json = try JSONDecoder().decode(DictionaryJson.self, from: data)
-            
-            let currentRevSplit = self.revision.split(separator: ".")
-            let newRevSplit = json.revision.split(separator: ".")
-            
-            if currentRevSplit.count != newRevSplit.count { return }
-            
-            for i in 0..<currentRevSplit.count {
-                guard let currentI = Int(currentRevSplit[i]),
-                      let newI = Int(newRevSplit[i]) else { return }
-                
-                if newI > currentI {
-                    self.hasUpdate = .updateAvailable
-                    return
-                }
+            let (data, response) = try await URLSession.shared.data(from: url)
+            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                throw URLError(.badServerResponse)
             }
-            
-            self.hasUpdate = .upToDate
+            let json = try JSONDecoder().decode(DictionaryJson.self, from: data)
+            hasUpdate = DictionaryDB.isNewer(json.revision, than: revision) ? .updateAvailable : .upToDate
         } catch {
             Logger.dictionary.error("Failed to fetch update: \(error.localizedDescription, privacy: .public)")
+            hasUpdate = .checkFailed
         }
     }
-    
-    func update(targetDir: URL, progress: Progress? = nil) async throws {
-        guard hasUpdate == .updateAvailable,
-              let downloadUrl = self.downloadUrl,
-              let url = URL(string: downloadUrl) else {
-            return
-        }
-        
-        do {
-            let (content, _) = try await URLSession.shared.data(from: url)
-            let archive = try Archive(data: content, accessMode: .read)
-            
-            var totalUnitCount = Int64(0)
-            if let progress = progress {
-                totalUnitCount = archive.reduce(0, { $0 + archive.totalUnitCountForReading($1) })
-                progress.totalUnitCount = totalUnitCount
-            }
-            
-            let fileManager = FileManager.default
-            let targetContent = try fileManager.contentsOfDirectory(at: targetDir, includingPropertiesForKeys: [])
-            for item in targetContent {
-                try fileManager.removeItem(at: item.standardized)
-            }
-            
-            for item in archive {
-                let extractPath = targetDir.appendingPathComponent(item.path)
-                guard extractPath.isContained(in: targetDir) else {
-                    throw NSError(domain: "DictionaryImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Error extracting dictionary"])
-                }
-                
-                let crc32: CRC32
-                if let progress = progress {
-                    let entryProgress = Progress(totalUnitCount: archive.totalUnitCountForReading(item))
-                    progress.addChild(entryProgress, withPendingUnitCount: entryProgress.totalUnitCount)
-                    crc32 = try archive.extract(item, to: extractPath, skipCRC32: false, progress: entryProgress)
-                } else {
-                    crc32 = try archive.extract(item, to: extractPath, skipCRC32: false)
-                }
-                
-                guard crc32 == item.checksum else {
-                    throw NSError(domain: "DictionaryImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid checksum for file \(item.path)"])
-                }
-            }
-            
-            self.hasUpdate = .upToDate
-            
-        } catch {
-            Logger.dictionary.error("Failed to update dictionary: \(error.localizedDescription, privacy: .public)")
-            throw error
-        }
+
+    static func isNewer(_ candidate: String, than current: String) -> Bool {
+        candidate.compare(current, options: .numeric) == .orderedDescending
     }
     
 }
@@ -155,99 +100,3 @@ extension DictionaryDB {
 struct DictionaryJson: Codable {
     let revision: String
 }
-
-
-//public class Dictionary: NSManagedObject {
-//    @Published public private(set) var hasUpdate: UpdateState = .unkown
-//
-//
-//    @MainActor
-//    public func update(targetDir: URL, progress: Progress? = nil) async throws {
-//        guard hasUpdate == .updateAvailable,
-//              let downloadUrl = self.downloadUrl,
-//              let url = URL(string: downloadUrl) else {
-//            return
-//        }
-//
-//        do {
-//            // TODO: rewrite
-////            let (content, _) = try await URLSession.shared.data(from: url)
-////            let archive = try Archive(data: content, accessMode: .read)
-////
-////            var totalUnitCount = Int64(0)
-////            if let progress = progress {
-////                totalUnitCount = archive.reduce(0, { $0 + archive.totalUnitCountForReading($1) })
-////                progress.totalUnitCount = totalUnitCount
-////            }
-////
-////            let fileManager = FileManager.default
-////            let targetContent = try fileManager.contentsOfDirectory(at: targetDir, includingPropertiesForKeys: [])
-////            for item in targetContent {
-////                try fileManager.removeItem(at: item.standardized)
-////            }
-////
-////            for item in archive {
-////                let extractPath = targetDir.appendingPathComponent(item.path)
-////                guard extractPath.isContained(in: targetDir) else {
-////                    throw "path traversal error"
-////                }
-////                let crc32: CRC32
-////                if let progress = progress {
-////                    let entryProgress = Progress(totalUnitCount: archive.totalUnitCountForReading(item))
-////                    progress.addChild(entryProgress, withPendingUnitCount: entryProgress.totalUnitCount)
-////                    crc32 = try archive.extract(item, to: extractPath, skipCRC32: false, progress: entryProgress)
-////                } else {
-////                    crc32 = try archive.extract(item, to: extractPath, skipCRC32: false)
-////                }
-////                guard crc32 == item.checksum else {
-////                    throw "invalid checksum for file \(item.path)"
-////                }
-////            }
-////
-////            await MainActor.run {
-////                self.hasUpdate = .upToDate
-////            }
-//        } catch {
-//            print("failed to update dictionary:", error)
-//            throw error
-//        }
-//    }
-//
-//    @MainActor
-//    public func fetchUpdate() async {
-//        guard let indexUrl = self.indexUrl,
-//              let url = URL(string: indexUrl) else {
-//            return
-//        }
-//
-//        do {
-//            //TODO: rewrite
-////            let (data, _) = try await URLSession.shared.data(from: url)
-////            let json = try JSONDecoder().decode(DictionaryJson.self, from: data)
-////
-////            let currentRevSplit = self.dictionary.revision.split(separator: ".")
-////            let newRevSplit = json.revision.split(separator: ".")
-////
-////            if currentRevSplit.count != newRevSplit.count { return }
-////
-////            for i in 0..<currentRevSplit.count {
-////                guard let currentI = Int(currentRevSplit[i]),
-////                      let newI = Int(newRevSplit[i]) else { return }
-////
-////                if newI > currentI {
-////                    await MainActor.run {
-////                        self.hasUpdate = .updateAvailable
-////                    }
-////                    return
-////                }
-////            }
-////
-////            await MainActor.run {
-////                self.hasUpdate = .upToDate
-////            }
-//        } catch {
-//            print("failed to fetch update:", error)
-//        }
-//    }
-//
-//}

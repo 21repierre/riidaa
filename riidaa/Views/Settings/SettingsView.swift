@@ -10,20 +10,19 @@ import SwiftUI
 struct SettingsView: View {
     
     @EnvironmentObject var settings: SettingsModel
-    @Environment(\.openURL) var openURL
     
     var body: some View {
         NavigationStack {
             List {
                 Section(header: Text("Reader")) {
                     NavigationLink(destination: DictionariesView()) {
-                        Text("Manage Dictionaries")
+                        Text("Dictionaries")
                     }
                     NavigationLink(destination: ReaderSettings()) {
-                        Text("Reader Settings")
+                        Text("Reader")
                     }
                     NavigationLink(destination: AnkiView()) {
-                        Text("Anki Settings")
+                        Text("Anki")
                     }
                     #if !APPSTORE
                         Toggle("Enable adult content", isOn: settings.$adult)
@@ -44,54 +43,16 @@ struct SettingsView: View {
                         Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
                             .foregroundColor(.secondary)
                     }
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("You can contact me on:")
-
-                        HStack(spacing: 10) {
-                            Image(systemName: "link")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 16, height: 16)
-                                .foregroundColor(.blue)
-                            Text("GitHub")
-                                .font(.body)
-                                .foregroundColor(.blue)
-                        }
-                        .onTapGesture {
-                            openURL(URL(string: "https://github.com/21repierre/riidaa")!)
-                        }
-
-                        HStack(spacing: 10) {
-                            Image(systemName: "bubble.left.and.bubble.right")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 16, height: 16)
-                                .foregroundColor(.blue)
-                            Text("Discord")
-                                .font(.body)
-                                .foregroundColor(.blue)
-                        }
-                        .onTapGesture {
-                            openURL(URL(string: "https://discordapp.com/users/250301061435228160")!)
-                        }
-
-                        HStack(spacing: 10) {
-                            Image(systemName: "envelope")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 16, height: 16)
-                                .foregroundColor(.blue)
-                            Text("Email")
-                                .font(.body)
-                                .foregroundColor(.blue)
-                        }
-                        .onTapGesture {
-                            openURL(URL(string: "mailto:riidaa@repierre.dev")!)
-                        }
+                    Link(destination: URL(string: "https://github.com/21repierre/riidaa")!) {
+                        Label("GitHub", systemImage: "link")
+                    }
+                    Link(destination: URL(string: "https://discordapp.com/users/250301061435228160")!) {
+                        Label("Discord", systemImage: "bubble.left.and.bubble.right")
+                    }
+                    Link(destination: URL(string: "mailto:riidaa@repierre.dev")!) {
+                        Label("Email", systemImage: "envelope")
                     }
 
-
-                    
                     VStack(alignment: .leading, spacing: 8) {
                         Text("This app’s reader feature is inspired by the open-source project Yomitan.")
                             .font(.body)

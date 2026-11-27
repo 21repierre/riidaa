@@ -18,7 +18,6 @@
 
 ## TODO
 
-- Update dictionary
 - Manually offset term length in parser view
 
 ## Volume format

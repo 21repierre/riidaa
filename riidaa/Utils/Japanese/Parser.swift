@@ -35,29 +35,81 @@ public struct Parser {
         text.katakanaToHiragana().expandLongVowels()
     }
 
+    static func variants(of cut: String) -> [String] {
+        var variants = [cut]
+        let stretchMarks: Set<Character> = ["ー", "〜", "～"]
+        let smallVowels: Set<Character> = ["ぁ", "ぃ", "ぅ", "ぇ", "ぉ", "ァ", "ィ", "ゥ", "ェ", "ォ"]
+        var unstretched = ""
+        for character in cut {
+            if stretchMarks.contains(character), let last = unstretched.last, isHiragana(last) { continue }
+            if smallVowels.contains(character), let last = unstretched.last, String(last).isKana, !smallVowelCombines(after: last) {
+                continue
+            }
+            unstretched.append(character)
+        }
+        variants.append(unstretched)
+        variants.append(cut.katakanaToHiragana())
+        if cut.contains("ー") {
+            variants.append(cut.katakanaToHiragana().expandLongVowels())
+            variants.append(cut.katakanaToHiragana().expandLongVowels(oRowAs: "お"))
+        }
+        variants.append(cut.fullwidthAlphanumericsToASCII())
+        var seen = Set<String>()
+        return variants.filter { !$0.isEmpty && seen.insert($0).inserted }
+    }
+
+    private static func isHiragana(_ character: Character) -> Bool {
+        character.unicodeScalars.allSatisfy { (0x3041...0x309F).contains($0.value) }
+    }
+
+    /// ファ, ティ, ウィ and the like: the small vowel is part of the mora, not a stretch.
+    private static func smallVowelCombines(after character: Character) -> Bool {
+        let combiners: Set<Character> = ["イ", "い", "フ", "ふ", "テ", "て", "デ", "で", "ウ", "う", "ヴ", "ト", "と", "ド", "ど", "シ", "し", "チ", "ち", "ジ", "じ", "ツ", "つ", "ク", "く", "グ", "ぐ"]
+        return combiners.contains(character)
+    }
+
+    private static func index(_ results: [TermDB]) -> [String: [TermDB]] {
+        var index: [String: [TermDB]] = [:]
+        for term in results {
+            let keys = Set([normalized(term.term), normalized(term.reading)])
+            for key in keys {
+                index[key, default: []].append(term)
+            }
+        }
+        return index
+    }
+
     private static func matches(
         cut: String, deinflections: [Deinflection],
-        in results: [TermDB], frequencies: [String: Int64]
+        in index: [String: [TermDB]], frequencies: [String: Int64]
     ) -> [TermDeinflection] {
         var terms: [TermDeinflection] = []
         for deinflection in deinflections {
-            let target = Parser.normalized(deinflection.text)
-            for term in results where
-                (Parser.normalized(term.term) == target ||
-                 Parser.normalized(term.reading) == target) &&
-                (deinflection.types.isEmpty ||
-                 term.wordTypes.isEmpty ||
-                 deinflection.types.inflectionMatch(wl: term.wordTypes)) {
-                terms.append(TermDeinflection(term: term, deinflections: [deinflection]))
+            for term in index[Parser.normalized(deinflection.text)] ?? [] {
+                let fits: Bool
+                if deinflection.inflections.isEmpty {
+                    fits = true
+                } else if term.wordTypes.isEmpty {
+                    fits = !SQLiteManager.shared.usesConjugationRules(dictionaryId: term.dictionary.id)
+                } else {
+                    fits = deinflection.types.inflectionMatch(wl: term.wordTypes)
+                }
+                if fits {
+                    terms.append(TermDeinflection(term: term, deinflections: [deinflection]))
+                }
             }
         }
         guard !terms.isEmpty else { return [] }
 
-        let grouped = Dictionary(grouping: terms, by: { $0.term })
-        let merged: [TermDeinflection] = grouped.map { term, group in
-            TermDeinflection(term: term, deinflections: group.flatMap { $0.deinflections })
+        let grouped = Dictionary(grouping: terms, by: { ObjectIdentifier($0.term) })
+        let merged: [TermDeinflection] = grouped.values.map { group in
+            TermDeinflection(term: group[0].term, deinflections: group.flatMap { $0.deinflections })
         }
         return merged.sorted {
+            let leftExact = $0.term.term == cut, rightExact = $1.term.term == cut
+            if leftExact != rightExact {
+                return leftExact
+            }
             if $0.term.reading == cut && $1.term.reading != cut {
                 return true
             } else if $0.term.reading != cut && $1.term.reading == cut {
@@ -78,7 +130,8 @@ public struct Parser {
     private static func frequencies(for texts: [String]) -> [String: Int64] {
         var lowest: [String: Int64] = [:]
         for entry in SQLiteManager.shared.findTermMeta(texts: texts) {
-            guard case .frequency(let frequency) = entry.content, let value = frequency.value else {
+            guard entry.dictionary.frequencyMode != "occurrence-based",
+                  case .frequency(let frequency) = entry.content, let value = frequency.value else {
                 continue
             }
             let key = frequencyKey(entry.term, entry.reading)
@@ -94,7 +147,7 @@ public struct Parser {
 
     /// Filed against a reading, or against none when the term has only one.
     private static func frequency(of term: TermDB, in frequencies: [String: Int64]) -> Int64? {
-        frequencies[frequencyKey(term.term, term.reading)]
+        frequencies[frequencyKey(term.term, term.effectiveReading)]
             ?? frequencies[frequencyKey(term.term, "")]
     }
 
@@ -105,7 +158,7 @@ public struct Parser {
         var l = 0
         var parts: [ParsingResult] = []
 
-        while l < n {
+        while l < n, !Task.isCancelled {
             let upper = min(n, l + maxTokenLength)
 
             // Build every candidate substring starting at `l` and collect all lookup texts,
@@ -114,7 +167,10 @@ public struct Parser {
             var lookupTexts = Set<String>()
             for end in stride(from: upper, to: l, by: -1) {
                 let cut = String(chars[l..<end])
-                let deinflections = Inflection.deinflect(text: cut)
+                var seen = Set<Deinflection>()
+                let deinflections = Parser.variants(of: cut)
+                    .flatMap { Inflection.deinflect(text: $0) }
+                    .filter { seen.insert($0).inserted }
                 candidates.append((cut: cut, deinflections: deinflections))
                 for di in deinflections {
                     lookupTexts.insert(di.text)
@@ -130,11 +186,12 @@ public struct Parser {
                 for: Array(Set(results.flatMap { [$0.term, $0.reading] }))
             )
 
+            let found = Parser.index(results)
             var possibilities: [ParsingResult] = []
             for candidate in candidates {
                 let matched = Parser.matches(
                     cut: candidate.cut, deinflections: candidate.deinflections,
-                    in: results, frequencies: frequencies
+                    in: found, frequencies: frequencies
                 )
                 if !matched.isEmpty {
                     possibilities.append(ParsingResult(original: candidate.cut, results: matched))

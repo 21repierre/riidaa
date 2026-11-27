@@ -10,11 +10,15 @@ import Foundation
 enum AnkiFieldToken: String, CaseIterable, Identifiable {
     case word
     case reading
+    case hiragana
     case furigana
+    case romaji
     case audio
     case picture
     case pitch
+    case pitchNumber
     case pitchGraph
+    case pitchDotGraph
     case pitchCategories
     case frequency
     case frequencySort
@@ -30,11 +34,15 @@ enum AnkiFieldToken: String, CaseIterable, Identifiable {
         switch self {
         case .word: return "word"
         case .reading: return "reading"
+        case .hiragana: return "reading (hiragana)"
         case .furigana: return "furigana"
+        case .romaji: return "romaji"
         case .audio: return "word audio"
         case .picture: return "page image"
         case .pitch: return "pitch accent (position)"
+        case .pitchNumber: return "pitch accent (number)"
         case .pitchGraph: return "pitch accent (diagram)"
+        case .pitchDotGraph: return "pitch accent (dot graph)"
         case .pitchCategories: return "pitch pattern"
         case .frequency: return "frequency"
         case .frequencySort: return "frequency (sort value)"
@@ -56,18 +64,26 @@ extension AnkiFieldToken {
             return ["word", "expression", "term", "vocab", "vocabulary", "kanji", "front"]
         case .reading:
             return ["reading", "wordreading", "expressionreading", "kana", "yomi"]
+        case .hiragana:
+            return ["wordhiragana", "hiragana", "readinghiragana"]
         case .furigana:
             return ["furigana", "wordfurigana", "expressionfurigana", "kanafurigana", "reading furigana"]
+        case .romaji:
+            return ["romaji", "wordromaji", "readingromaji"]
         case .audio:
             return ["wordaudio", "expressionaudio", "audio", "termaudio", "pronunciation"]
         case .picture:
             return ["picture", "image", "screenshot", "definitionpicture"]
         case .pitch:
             return ["pitchposition", "pitch", "accent"]
+        case .pitchNumber:
+            return ["pitchnumber", "pitchaccentnumber"]
         case .pitchGraph:
             return ["pitchaccent", "pitchgraph", "pitchdiagram"]
+        case .pitchDotGraph:
+            return []
         case .pitchCategories:
-            return ["pitchcategories", "pitchpattern", "pitchaccentcategories", "pitchaccentnotes"]
+            return ["pitchcategories", "pitchpattern", "pitchaccentcategories"]
         case .frequency:
             return ["frequency", "freq", "frequencies"]
         case .frequencySort:
@@ -105,6 +121,10 @@ extension AnkiFieldToken {
                 break
             }
         }
+        if candidates.contains(where: { $0.key == "pitchnumber" }), let field = mapping[.pitchGraph] {
+            mapping[.pitchGraph] = nil
+            mapping[.pitchDotGraph] = field
+        }
         return mapping
     }
 }
@@ -136,30 +156,68 @@ struct AnkiNoteContext {
     var pictureURL: URL? = nil
 
     private var summary: TermMetaSummary {
-        TermMetaSummary(meta: meta, reading: term.reading)
+        TermMetaSummary(meta: meta, term: term.term, reading: term.effectiveReading)
     }
 
-    /// Falls back to the plain sentence if the match doesn't land where it claims, so a stale
-    /// offset can't corrupt the text.
-    private var emphasizedSentence: String {
-        guard let match = match, !match.surface.isEmpty else { return sentence }
+    private var hiraganaReading: String {
+        term.effectiveReading.katakanaToHiragana()
+    }
+
+    private var sentenceAroundMatch: (before: String, surface: String, after: String)? {
+        guard let match = match, !match.surface.isEmpty else { return nil }
         let characters = Array(sentence)
         let end = match.offset + match.surface.count
         guard match.offset >= 0, end <= characters.count,
               String(characters[match.offset..<end]) == match.surface else {
-            return sentence
+            return nil
         }
-        return String(characters[0..<match.offset])
-            + "<b>" + match.surface + "</b>"
-            + String(characters[end...])
+        return (
+            SentenceText.clauseEnding(String(characters[0..<match.offset])),
+            match.surface,
+            SentenceText.clauseStarting(String(characters[end...]))
+        )
     }
 
-    /// Like `description`, but without the part-of-speech tags.
+    private func emphasizedSentence(furigana: Bool) -> String {
+        guard let (before, surface, after) = sentenceAroundMatch else {
+            return SentenceText.html(sentence)
+        }
+        let word = furigana
+            ? Furigana.annotate(surface: surface, term: term.term, reading: term.reading) ?? surface
+            : surface
+        return SentenceText.html(before) + "<b>" + SentenceText.escaped(word) + "</b>" + SentenceText.html(after)
+    }
+
+    static func meaning(_ definition: ContentDefinition, limit: Int = 3) -> String {
+        guard case .detailed(let content) = definition, let list = firstGlossaryList(in: content) else {
+            return glossary(definition)
+        }
+        return list.content
+            .map { row in row.map(glossary).joined(separator: " ") }
+            .filter { !$0.isEmpty }
+            .prefix(limit)
+            .joined(separator: ", ")
+    }
+
+    private static func firstGlossaryList(in content: StructuredContent) -> StructuredContentList? {
+        switch content {
+        case .list(let list), .numberedList(let list):
+            if list.role == "glossary" { return list }
+            return list.content.joined().lazy.compactMap(firstGlossaryList).first
+        case .array(let rows):
+            return rows.joined().lazy.compactMap(firstGlossaryList).first
+        case .container(let container), .inlineContainer(let container):
+            return container.role == "forms" ? nil : firstGlossaryList(in: container.data)
+        case .table, .link, .text, .newline:
+            return nil
+        }
+    }
+
     static func glossary(_ definition: ContentDefinition) -> String {
         if case .detailed(let content) = definition {
             return glossary(content)
         }
-        return definition.description
+        return SentenceText.html(definition.description)
     }
 
     private static func glossary(_ content: StructuredContent) -> String {
@@ -176,7 +234,7 @@ struct AnkiNoteContext {
                 .filter { !$0.isEmpty }
                 .joined(separator: "<br>")
         case .container(let container), .inlineContainer(let container):
-            return glossary(container.data)
+            return container.role == "forms" ? "" : glossary(container.data)
         case .table(let table):
             return glossary(table.data)
         case .link(let link):
@@ -187,7 +245,7 @@ struct AnkiNoteContext {
                 .filter { !$0.isEmpty }
                 .joined(separator: ", ")
         case .text(let string):
-            return string.content
+            return SentenceText.html(string.content)
         case .newline:
             return "<br>"
         }
@@ -197,40 +255,53 @@ struct AnkiNoteContext {
         let value: String?
         switch token {
         case .word:
-            value = term.term
+            value = SentenceText.escaped(term.term)
         case .reading:
-            value = term.reading
+            value = SentenceText.escaped(term.effectiveReading)
+        case .hiragana:
+            value = SentenceText.escaped(hiraganaReading)
         case .furigana:
-            value = Furigana.annotate(term: term.term, reading: term.reading)
+            value = Furigana.annotate(term: term.term, reading: term.reading).map(SentenceText.escaped)
+        case .romaji:
+            value = hiraganaReading.applyingTransform(.toLatin, reverse: false).map(SentenceText.escaped)
         case .audio:
             value = audioURL?.absoluteString
         case .picture:
             value = pictureURL?.absoluteString
         case .pitch:
             value = summary.pitchPositions.joined(separator: " ")
+        case .pitchNumber:
+            value = summary.pitchNumbers.joined(separator: ", ")
         case .pitchGraph:
             value = summary.pitchGraphs.joined(separator: " ")
+        case .pitchDotGraph:
+            value = summary.pitchDotGraphs.joined(separator: " ")
         case .pitchCategories:
             value = summary.pitchCategories.joined(separator: ",")
         case .frequency:
-            value = summary.frequencyLabels.joined(separator: "<br>")
+            value = summary.frequencyLabels.map(SentenceText.escaped).joined(separator: "<br>")
         case .frequencySort:
             value = summary.frequencySortValue.map(String.init)
         case .meaning:
-            value = term.parseDefinition.first.map(AnkiNoteContext.glossary)
+            value = term.loadedDefinitions.first(where: { definition in
+                if case .deinflection = definition { return false }
+                return true
+            }).map { AnkiNoteContext.meaning($0) }
         case .glossary:
             // Deinflection entries are navigation hints, not meanings.
-            value = term.parseDefinition
+            value = term.loadedDefinitions
                 .filter { definition in
                     if case .deinflection = definition { return false }
                     return true
                 }
                 .map(AnkiNoteContext.glossary)
                 .joined(separator: "<br>")
-        case .sentence, .sentenceFurigana:
-            value = emphasizedSentence
+        case .sentence:
+            value = emphasizedSentence(furigana: false)
+        case .sentenceFurigana:
+            value = emphasizedSentence(furigana: true)
         case .source:
-            value = source?.formatted
+            value = source.map { SentenceText.escaped($0.formatted) }
         }
         guard let value = value, !value.isEmpty else { return nil }
         return value
@@ -247,8 +318,34 @@ struct AnkiExport {
         return types?.compactMap { ($0["CFBundleURLSchemes"] as? [String])?.first }.first ?? "riidaa"
     }
 
-    static func callbackURL(_ query: String) -> String {
-        "\(callbackScheme)://anki-callback?\(query)"
+    /// Built with `URLComponents` so kanji and kana in the values are percent-encoded.
+    static func callbackURL(_ items: [URLQueryItem]) -> String {
+        var components = URLComponents()
+        components.scheme = callbackScheme
+        components.host = "anki-callback"
+        components.queryItems = items
+        return components.string ?? "\(callbackScheme)://anki-callback"
+    }
+
+    /// The term and reading AnkiMobile's success callback names, nil for any other URL.
+    static func exportedWord(in url: URL) -> (term: String, reading: String)? {
+        guard url.scheme == callbackScheme, url.host() == "anki-callback",
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+              let term = items.first(where: { $0.name == "term" })?.value,
+              let reading = items.first(where: { $0.name == "reading" })?.value else {
+            return nil
+        }
+        return (term, reading)
+    }
+
+    static func handleCallback(_ url: URL) {
+        guard url.scheme == callbackScheme, url.host() == "anki-callback" else { return }
+        PageImageServer.shared.stop()
+        guard let word = exportedWord(in: url) else { return }
+        // Waits on the write queue, which a dictionary import can hold for a while.
+        DispatchQueue.global(qos: .utility).async {
+            SQLiteManager.shared.markExported(term: word.term, reading: word.reading)
+        }
     }
 
     let profile: String
@@ -271,15 +368,18 @@ struct AnkiExport {
         }
 
         var query = ""
+        var sent = Set<String>()
         for token in AnkiFieldToken.allCases {
             guard
                 let field = fields[token],
+                !sent.contains(field),
                 let fieldEncoded = AnkiExport.encoded(field),
                 let value = context.value(for: token),
                 let valueEncoded = AnkiExport.encoded(value)
             else {
                 continue
             }
+            sent.insert(field)
             query += "&fld\(fieldEncoded)=\(valueEncoded)"
         }
         if query.isEmpty {
@@ -291,5 +391,61 @@ struct AnkiExport {
 
     private static func encoded(_ value: String) -> String? {
         value.addingPercentEncoding(withAllowedCharacters: queryValueAllowed)
+    }
+}
+
+/// Tidies OCR'd bubble text for a card.
+enum SentenceText {
+
+    private static let enders: Set<Character> = ["。", "！", "？", "!", "?"]
+    private static let closers: Set<Character> = ["」", "』", "）", ")", "】"]
+
+    /// What follows the last sentence end (and its closing brackets), so a bubble's earlier
+    /// sentences are dropped.
+    static func clauseEnding(_ text: String) -> String {
+        let characters = Array(text)
+        guard let last = characters.indices.last(where: { endsSentence(characters, at: $0) }) else { return text }
+        return String(characters[(last + 1)...].drop(while: { enders.contains($0) || closers.contains($0) }))
+    }
+
+    /// Up to and including the first sentence end and anything closing it (！！」).
+    static func clauseStarting(_ text: String) -> String {
+        let characters = Array(text)
+        guard var end = characters.indices.first(where: { endsSentence(characters, at: $0) }) else { return text }
+        while end < characters.count, enders.contains(characters[end]) || closers.contains(characters[end]) {
+            end += 1
+        }
+        return String(characters[..<end])
+    }
+
+    private static func endsSentence(_ characters: [Character], at index: Int) -> Bool {
+        guard enders.contains(characters[index]) else { return false }
+        var next = index + 1
+        while next < characters.count, enders.contains(characters[next]) {
+            next += 1
+        }
+        var closed = false
+        while next < characters.count, closers.contains(characters[next]) {
+            closed = true
+            next += 1
+        }
+        guard closed, next < characters.count else { return true }
+        return !quotatives.contains(characters[next])
+    }
+
+    private static let quotatives: Set<Character> = ["と", "っ", "て"]
+
+    /// Anki fields are HTML, so a manga titled `Foo <Bar>` would otherwise open a tag.
+    static func escaped(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+    }
+
+    static func html(_ text: String) -> String {
+        escaped(text)
+            .replacingOccurrences(of: "\n", with: "<br>")
+            .replacingOccurrences(of: "[．・]{2,}|\\.{3,}", with: "…", options: .regularExpression)
     }
 }

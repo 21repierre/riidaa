@@ -17,7 +17,8 @@ struct TermDefinitionTests {
             dictionary: DictionaryDB(id: 1, revision: "", title: "Test", format: 3),
             exportedToAnki: false
         )
-        // Parsing is kicked off on a background queue by init and published on the main one.
+        // Parsing runs on a background queue and is published on the main one.
+        term.loadDefinitions()
         for _ in 0..<120 where term.parseDefinition.isEmpty {
             try? await Task.sleep(nanoseconds: 5_000_000)
         }
